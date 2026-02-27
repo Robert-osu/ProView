@@ -1,98 +1,141 @@
 import pygame
-
 from my_lib.GameObjectRenderer import GameObject
 
-# --- Класс для сетки (будет рисовать команды) ---
 class GridObject(GameObject):
     def __init__(self, viewer_context, z_order=1):
         super().__init__(z_order)
-        print(f"[DEBUG] GridObject.__init__: viewer_context={viewer_context}, z_order={z_order}")
-        self.ctx = viewer_context # Ссылка на главный класс с данными
+        self.ctx = viewer_context
         self.screen = self.ctx.screen
-
+        
+        # Параметры сетки
+        self.cell_size = self.ctx.thumb_size + self.ctx.padding
+        self.cols = self.ctx.cols
+        
+        # Кэш для поверхностей ячеек
+        self.cell_surfaces = {}  # {index: surface}
+        
+        # Предварительно создаем все ячейки
+        self._create_all_cells()
+    
+    def _create_all_cells(self):
+        """Создает поверхности для всех ячеек заранее"""
+        thumb_size = self.ctx.thumb_size
+        padding = self.ctx.padding
+        font = pygame.font.Font(None, self.ctx.font_size)
+        
+        for idx, cmd in enumerate(self.ctx.cmd_list):
+            # Создаем поверхность для ячейки
+            cell = self.ctx.cmd_images[cmd]
+            
+            # Добавляем рамку
+            pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
+            
+            self.cell_surfaces[idx] = cell
+    
     def _draw(self):
         if self.ctx.re_grid:
-            # Очищаем экран
             self.screen.fill((50, 50, 50))
-
             self.draw_grid()
             self.ctx.re_grid = False
             self.ctx.re_ui = True
             self.ctx.re_top = True
-
+    
     def _update(self):
-        # Обновление, связанное с сеткой (например, скролл)
         pass
-
+    
     def _execute(self):
-        # Логика сетки (проверка hover, клики)
         pass
-
+    
     def draw_grid(self):
         """Рисует сетку с изображениями"""
         self.ctx.update_visible_range()
         
-        # Определяем шрифт для номеров строк
-        ln_size = self.ctx.line_font_size
-        line_font = pygame.font.Font(None, ln_size)
+        # Определяем видимые строки
+        first_row = self.ctx.first_visible_row
+        last_row = self.ctx.last_visible_row
         
-        # Рисуем номера строк (только для видимых строк)
-        first_visible_row = self.ctx.first_visible_row
-        last_visible_row = self.ctx.last_visible_row
+        # Параметры позиционирования
+        cell_size = self.cell_size
         padding = self.ctx.padding
-        thumb_size = self.ctx.thumb_size
         offsetW = self.ctx.offsetW
         offsetH = self.ctx.offsetH
         scroll_y = self.ctx.scroll_y
         window_height = self.ctx.window_height
-        line_number_padding = self.ctx.line_number_padding
+        
+        # Рисуем номера строк
+        self._draw_line_numbers(first_row, last_row, offsetH, scroll_y, window_height)
+        
+        # Рисуем видимые ячейки
+        for row in range(first_row, last_row):
+            for col in range(self.cols):
+                idx = row * self.cols + col
+                if idx >= len(self.ctx.cmd_list):
+                    break
+                
+                # Вычисляем позицию
+                x = padding + col * cell_size + offsetW
+                y = padding + row * cell_size + offsetH - scroll_y
+                
+                # Проверяем видимость
+                if y + self.ctx.thumb_size < 0 or y > window_height:
+                    continue
+                
+                # Рисуем ячейку из кэша
+                if idx in self.cell_surfaces:
+                    self.screen.blit(self.cell_surfaces[idx], (x, y))
+        
+        # Рисуем скроллбар
+        self.ctx.scrollbar.draw(self.ctx.screen)
+    
+    def _draw_line_numbers(self, first_row, last_row, offsetH, scroll_y, window_height):
+        """Рисует номера строк"""
+        line_font = pygame.font.Font(None, self.ctx.line_font_size)
+        padding = self.ctx.padding
+        thumb_size = self.ctx.thumb_size
+        cell_size = self.cell_size
         k = self.ctx.k_size
-        cols = self.ctx.cols
-
-
-        for row in range(first_visible_row, last_visible_row):
-            y = padding + row * (thumb_size + padding) + offsetH - scroll_y
+        line_number_padding = self.ctx.line_number_padding
+        
+        for row in range(first_row, last_row):
+            y = padding + row * cell_size + offsetH - scroll_y
             
             if y + thumb_size > 0 and y < window_height:
                 line_number_x = padding + line_number_padding
                 line_number_y = y + thumb_size // 2
                 
+                # Фон для номера
                 if row < 9:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (30 * k), (26 * k)), border_top_right_radius=int(5 * k))
+                    width = 30 * k
                 elif row < 99:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (40 * k), (26 * k)), border_top_right_radius=int(5 * k))
+                    width = 40 * k
                 else:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (45 * k), (26 * k)), border_top_right_radius=int(5 * k))
+                    width = 45 * k
                 
+                pygame.draw.rect(self.screen, (70, 70, 70), 
+                               (line_number_x - (5 * k), line_number_y - (12 * k), 
+                                width, (26 * k)), 
+                               border_top_right_radius=int(5 * k))
+                
+                # Текст номера
                 line_text = line_font.render(f"{row + 1}", True, (200, 200, 200))
-                self.ctx.screen.blit(line_text, (line_number_x, line_number_y - (8 * k)))
+                self.screen.blit(line_text, (line_number_x, line_number_y - (8 * k)))
+    
+    def get_cell_at_pos(self, mouse_x, mouse_y, grid_x, grid_y):
+        """Определяет индекс ячейки по координатам мыши"""
+        # Относительные координаты внутри сетки
+        rel_x = mouse_x - grid_x - self.ctx.offsetW
+        rel_y = mouse_y - grid_y - self.ctx.offsetH + self.ctx.scroll_y
         
-        # Рисуем только видимые миниатюры
-        for row in range(first_visible_row, last_visible_row):
-            for col in range(cols):
-                i = row * cols + col
-                if i >= len(self.ctx.cmd_list):
-                    break
-                
-                x = padding + col * (thumb_size + padding) + offsetW
-                y = padding + row * (thumb_size + padding) + offsetH - scroll_y
-                
-                if y + thumb_size < 0 or y > window_height:
-                    continue
-                
-                self.draw_thumbnail(i, x, y)
-
-        self.ctx.scrollbar.draw(self.ctx.screen)
-
-    def draw_thumbnail(self, index, x, y):
-        """Рисует одну миниатюру с рамкой и номером"""
-        cmd = self.ctx.cmd_list[index]
-        self.screen.blit(self.ctx.cmd_images[cmd], (x, y))
+        if rel_x < 0 or rel_y < 0:
+            return None
         
-        # Рисуем номер
-        font = pygame.font.Font(None, self.ctx.font_size)
-        text = font.render(str(index), True, (255, 255, 255))
-        self.screen.blit(text, (x+self.ctx.font_padding, y+self.ctx.font_padding))
+        col = rel_x // self.cell_size
+        row = rel_y // self.cell_size
+        
+        if col >= self.cols:
+            return None
+        
+        idx = row * self.cols + col
+        if 0 <= idx < len(self.ctx.cmd_list):
+            return idx
+        return None

@@ -31,7 +31,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     """
     def __init__(self, screen, pro: Programmator, k_size=1):
         super().__init__(z_order=0)
-        print(f"[DEBUG] ProgrammatorViewer.__init__: начало инициализации")
         
         # === 1. Базовые параметры ===
         self.k_size = max(0.8, min(1.5, k_size))
@@ -46,28 +45,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.screen = screen
         self.clock = pygame.time.Clock()
         
-        print(f"[DEBUG] ProgrammatorViewer: k_size={self.k_size}, команд={len(self.cmd_list)}")
-        
-        # === 2. UI размеры и константы ===
-        self._init_ui_dimensions()
-        
-        # === 3. Состояние и трекеры ===
-        self._init_state_trackers()
-        
-        
-        # === 7. Команды и фасад ===
-        self._init_commands_and_facade()
-        
-        # === 8. UI элементы (pygame_gui) ===
-        self._init_ui_elements()
-        
-        # === 9. Финальные вычисления ===
-        self._init_final_calculations()
-        
-        # === 10. Создание менеджера и добавление объектов ===
-        self._init_manager()
-        
-        print(f"[DEBUG] ProgrammatorViewer.__init__: инициализация завершена")
+        self._init_all()
 
     def _draw(self):
         pass
@@ -151,6 +129,26 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             self.re_grid = True
         
         return True  # Продолжаем работу
+
+    def _init_all(self):
+        # === 2. UI размеры и константы ===
+        self._init_ui_dimensions()
+        
+        # === 3. Состояние и трекеры ===
+        self._init_state_trackers()
+        
+        
+        # === 7. Команды и фасад ===
+        self._init_commands_and_facade()
+        
+        # === 8. UI элементы (pygame_gui) ===
+        self._init_ui_elements()
+        
+        # === 9. Финальные вычисления ===
+        self._init_final_calculations()
+        
+        # === 10. Создание менеджера и добавление объектов ===
+        self._init_manager()
 
     def _init_ui_dimensions(self):
         """Инициализация UI размеров"""
