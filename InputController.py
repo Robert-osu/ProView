@@ -68,6 +68,17 @@ class PasteFromClipboardCommand(KeyCommand):
         if hasattr(self.viewer, 'paste_from_clipboard'):
             self.viewer.paste_from_clipboard()
 
+class ChangeCellCommand(KeyCommand):
+    def __init__(self, viewer, cmd):
+        self.viewer = viewer
+        self.cmd = cmd
+    
+    def execute(self):
+        print("изменение клетки")
+        # Логика
+        if hasattr(self.viewer, 'change_cell'):
+            self.viewer.change_cell(self.cmd)
+
 # ========== ПАТТЕРН ФАСАД ==========
 class KeyInputFacade:
     """Фасад для работы с клавиатурой, использующий команды"""

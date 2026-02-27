@@ -1,8 +1,4 @@
 import pygame
-
-
-
-
 import pygame_gui
 
 from Command import Command
@@ -38,10 +34,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.thumb_size = int(64 * self.k_size)
 
         self.pro = pro
-        self.cmd_list = pro._commands
+        self.cmd_list = pro._commands # commands
         self.cols = 16
         self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
-        self.cmd_images = GetImage(self.thumb_size).get()
+        self.cmd_images = GetImage(self.thumb_size).get() # шаблон команд
         self.screen = screen
         self.clock = pygame.time.Clock()
         
@@ -201,8 +197,8 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             'ВВЕРХ': self.scroll_up,
             'ВНИЗ': self.scroll_down,
             'ВЛЕВО': None,
-            'ВПРАВО': None,
-            'ДЕЙСТВИЕ': self.select_current,
+            'ВПРАВО': self.change_cell,
+            'ДЕЙСТВИЕ': self.change_cell,
             'МЕНЮ': self.open_settings
         }
         
@@ -253,6 +249,12 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.manager.add(self.grid, self.grid.z_order)
         self.manager.add(self.ui, self.ui.z_order)
         self.manager.add(self.top_panel, self.top_panel.z_order)
+
+    def change_cell(self, cmd:Command):
+        id = self.hovered.current
+        self.cmd_list[id] = cmd
+        self.grid.update_cell_image(id, cmd)
+        self.re_grid = True
 
     def check_hover(self):
         """Проверяет hover математически, без перебора"""
@@ -307,7 +309,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         """Копирование в буфер обмена"""
         print("[DEBUG] copy_to_clipboard вызван!")
         try:
-            pygame.scrap.init()
             pygame.scrap.put_text(self.pro.getEncode())
             print("[DEBUG] Скопировано в буфер обмена!")
         except Exception as e:
@@ -317,7 +318,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         """Вставка из буфера обмена"""
         print("[DEBUG] paste_from_clipboard вызван!")
         try:
-            pygame.scrap.init()
             clipboard_text = pygame.scrap.get_text()
             if clipboard_text:
                 print(f"[DEBUG] Текст из буфера: {clipboard_text[:50]}...")
@@ -411,6 +411,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.open_settings_cmd = OpenSettingsCommand(self)
         self.copy_clipboard_cmd = CopyToClipboardCommand(self)
         self.paste_clipboard_cmd = PasteFromClipboardCommand(self)
+        self.change_cell_cmd = ChangeCellCommand(self, Command.ALARM)
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
@@ -425,6 +426,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         # Привязка комбинаций с модификаторами
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
         self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
+        self.key_facade.bind_scan_code(29, pygame.KMOD_CTRL, self.change_cell_cmd)
         
         print(f"[DEBUG] Горячие клавиши настроены")
 

@@ -17,6 +17,17 @@ class GridObject(GameObject):
         # Предварительно создаем все ячейки
         self._create_all_cells()
     
+    def update_cell_image(self, idx, cmd):
+        """Обновляет кеш изображения для указанной ячейки"""
+        if 0 <= idx < len(self.ctx.cmd_list):
+            # self.ctx.cmd_list[idx] = cmd
+            
+            # Обновляем кеш
+            self.cell_surfaces[idx] = self.ctx.cmd_images[cmd]
+            
+            # Помечаем сетку для перерисовки
+            self.ctx.re_grid = True
+
     def _create_all_cells(self):
         """Создает поверхности для всех ячеек заранее"""
         thumb_size = self.ctx.thumb_size
