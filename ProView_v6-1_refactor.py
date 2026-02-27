@@ -252,9 +252,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def change_cell(self, cmd:Command):
         id = self.hovered.current
-        self.cmd_list[id] = cmd
-        self.grid.update_cell_image(id, cmd)
-        self.re_grid = True
+        if id != None and id < len(self.cmd_list):
+            self.cmd_list[id] = cmd
+            self.grid.update_cell_image(id, cmd)
+            self.re_grid = True
 
     def check_hover(self):
         """Проверяет hover математически, без перебора"""
@@ -404,7 +405,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def _create_commands(self):
         """Создание всех команд"""
-        print(f"[DEBUG] _create_commands: создание команд")
         self.scroll_up_cmd = ScrollUpCommand(self)
         self.scroll_down_cmd = ScrollDownCommand(self)
         self.select_cmd = SelectCommand(self)
@@ -415,7 +415,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
-        print(f"[DEBUG] _setup_key_facade: настройка горячих клавиш")
         
         # Привязка обычных клавиш
         self.key_facade.bind_key(pygame.K_UP, self.scroll_up_cmd)
@@ -428,28 +427,23 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
         self.key_facade.bind_scan_code(29, pygame.KMOD_CTRL, self.change_cell_cmd)
         
-        print(f"[DEBUG] Горячие клавиши настроены")
 
 
 
 if __name__ == "__main__":
-    print("[DEBUG] Запуск программы")
     
     window_width, window_height = 1250, 760
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
     pygame.display.set_caption("Programmator Viewer v6")
-    print(f"[DEBUG] Окно создано: {window_width}x{window_height}")
 
     encoded_string = "XQAAgACzAAAAAAAAAAAZADAMYCDURSxK8GR5e/2nd+V9B2fs+9LemstWZRQBmMQiE4IOuXqySGdcZtrDkPe00KEs+KiBkaH1Dx0a4GlBU6a90Uy5qp5AHk4BJ9dul//0RfUyVcEDj28w/394ryD97MbhFAMFuVwQPzKLgA=="
     v_k = [0.5, 1, 1.5]
 
     pro = Programmator()
-    print("[DEBUG] Programmator создан")
     
     pro_view = ProgrammatorViewer(screen, pro)
-    print("[DEBUG] ProgrammatorViewer создан")
 
     managerGO = GameObjectManager()
     #managerGO.add(pro, 100)
@@ -458,7 +452,6 @@ if __name__ == "__main__":
     running = True
     clock = pygame.time.Clock()    
 
-    print("[DEBUG] Запуск главного цикла")
     
     while running:
         # Запускаем менеджер и получаем сигнал о продолжении
@@ -467,4 +460,3 @@ if __name__ == "__main__":
         clock.tick(30)
 
     pygame.quit()
-    print("[DEBUG] Программа завершена")
