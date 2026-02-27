@@ -1,253 +1,24 @@
 import pygame
-import os
-import glob
-from PIL import Image
-import numpy as np
+
+
+
+
 import pygame_gui
 
 from Command import Command
 from Programmator import Programmator
 from Scrollbar import Scrollbar
-from test_binding1 import KeyBindWindow
 from InputController import *
+
 from my_lib.GameObjectRenderer import GameObject, GameObjectManager # Импортируем новое
 
-class ValueTracker:
-    def __init__(self, initial_value=None):
-        self.current = initial_value
-        self.previous = None
-        self.changed = False
-    
-    def update(self, new_value):
-        if new_value != self.current:
-            self.previous = self.current
-            self.current = new_value
-            self.changed = True
-        else:
-            self.changed = False
+from Grid import GridObject
+from TopPanel import TopPanelObject
+from UIManager import UIManagerObject
 
-# --- Класс для сетки (будет рисовать команды) ---
-class GridObject(GameObject):
-    def __init__(self, viewer_context, z_order=1):
-        super().__init__(z_order)
-        print(f"[DEBUG] GridObject.__init__: viewer_context={viewer_context}, z_order={z_order}")
-        self.ctx = viewer_context # Ссылка на главный класс с данными
-        self.screen = self.ctx.screen
-
-    def _draw(self):
-        if self.ctx.re_grid:
-            # Очищаем экран
-            self.screen.fill((50, 50, 50))
-
-            self.draw_grid()
-            self.ctx.re_grid = False
-            self.ctx.re_ui = True
-            self.ctx.re_top = True
-
-    def _update(self):
-        # Обновление, связанное с сеткой (например, скролл)
-        pass
-
-    def _execute(self):
-        # Логика сетки (проверка hover, клики)
-        pass
-
-    def draw_grid(self):
-        """Рисует сетку с изображениями"""
-        self.ctx.update_visible_range()
-        
-        # Определяем шрифт для номеров строк
-        ln_size = self.ctx.line_font_size
-        line_font = pygame.font.Font(None, ln_size)
-        
-        # Рисуем номера строк (только для видимых строк)
-        first_visible_row = self.ctx.first_visible_row
-        last_visible_row = self.ctx.last_visible_row
-        padding = self.ctx.padding
-        thumb_size = self.ctx.thumb_size
-        offsetW = self.ctx.offsetW
-        offsetH = self.ctx.offsetH
-        scroll_y = self.ctx.scroll_y
-        window_height = self.ctx.window_height
-        line_number_padding = self.ctx.line_number_padding
-        k = self.ctx.k_size
-        cols = self.ctx.cols
+from utils import ValueTracker, GetImage
 
 
-        for row in range(first_visible_row, last_visible_row):
-            y = padding + row * (thumb_size + padding) + offsetH - scroll_y
-            
-            if y + thumb_size > 0 and y < window_height:
-                line_number_x = padding + line_number_padding
-                line_number_y = y + thumb_size // 2
-                
-                if row < 9:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (30 * k), (26 * k)), border_top_right_radius=int(5 * k))
-                elif row < 99:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (40 * k), (26 * k)), border_top_right_radius=int(5 * k))
-                else:
-                    pygame.draw.rect(self.screen, (70, 70, 70), 
-                               (line_number_x - (5 * k), line_number_y - (12 * k), (45 * k), (26 * k)), border_top_right_radius=int(5 * k))
-                
-                line_text = line_font.render(f"{row + 1}", True, (200, 200, 200))
-                self.ctx.screen.blit(line_text, (line_number_x, line_number_y - (8 * k)))
-        
-        # Рисуем только видимые миниатюры
-        for row in range(first_visible_row, last_visible_row):
-            for col in range(cols):
-                i = row * cols + col
-                if i >= len(self.ctx.cmd_list):
-                    break
-                
-                x = padding + col * (thumb_size + padding) + offsetW
-                y = padding + row * (thumb_size + padding) + offsetH - scroll_y
-                
-                if y + thumb_size < 0 or y > window_height:
-                    continue
-                
-                self.draw_thumbnail(i, x, y)
-
-        self.ctx.scrollbar.draw(self.ctx.screen)
-
-    def draw_thumbnail(self, index, x, y):
-        """Рисует одну миниатюру с рамкой и номером"""
-        cmd = self.ctx.cmd_list[index]
-        self.screen.blit(self.ctx.cmd_images[cmd], (x, y))
-        
-        # Рисуем номер
-        font = pygame.font.Font(None, self.ctx.font_size)
-        text = font.render(str(index), True, (255, 255, 255))
-        self.screen.blit(text, (x+self.ctx.font_padding, y+self.ctx.font_padding))
-
-# --- Класс для верхней панели ---
-class TopPanelObject(GameObject):
-    def __init__(self, viewer_context, z_order=10):
-        super().__init__(z_order)
-        print(f"[DEBUG] TopPanelObject.__init__: viewer_context={viewer_context}, z_order={z_order}")
-        self.ctx = viewer_context
-        self.screen = viewer_context.screen
-
-    def _draw(self):
-        # Рисует панель поверх сетки
-        if self.ctx.re_top:
-            self.draw_top_panel()
-            self.ctx.re_top = False
-
-    def _update(self):
-        # Обновление, связанное с сеткой (например, скролл)
-        pass
-
-    def _execute(self):
-        # Логика сетки (проверка hover, клики)
-        pass
-
-    def draw_top_panel(self):
-        """Рисует верхнюю панель с кнопками"""
-        # Рисуем фон панели
-        panel_rect = pygame.Rect(0, 0, self.ctx.window_width, self.ctx.panel_height)
-        pygame.draw.rect(self.screen, (60, 60, 70), panel_rect)  # Темно-серый фон
-        
-        # Рисуем нижнюю границу панели
-        pygame.draw.line(self.screen, (100, 100, 110), 
-                        (0, self.ctx.panel_height), 
-                        (self.ctx.window_width, self.ctx.panel_height), 2)
-        
-        # Рисуем дополнительную информацию на панели
-        font = pygame.font.Font(None, int(20 * self.ctx.k_size))
-        
-        # Информация о количестве команд
-        text = font.render(f"Привет от Majin'а. Команд: {len(self.ctx.cmd_list)}", True, (200, 200, 200))
-        text_x = self.ctx.window_width - text.get_width() - self.ctx.padding * 2
-        text_y = (self.ctx.panel_height - text.get_height()) // 2
-        self.screen.blit(text, (text_x, text_y))
-
-# --- Класс для UI (pygame_gui) ---
-class UIManagerObject(GameObject):
-    def __init__(self, viewer_context, z_order=20):
-        super().__init__(z_order)
-        print(f"[DEBUG] UIManagerObject.__init__: viewer_context={viewer_context}, z_order={z_order}")
-        self.ctx = viewer_context
-        self.ui_manager = pygame_gui.UIManager((self.ctx.window_width, self.ctx.window_height))
-        self.menu_buttons = [] # Кнопки будем хранить здесь
-        self.key_bind_window = None
-        self.create_menu_button()
-
-    def _draw(self):
-        if self.ctx.re_ui:
-            # Рисуем UI поверх всего
-            self.ui_manager.draw_ui(self.ctx.screen)
-
-            pygame.display.flip()
-            self.ctx.re_ui = False
-        if self.key_bind_window and self.key_bind_window.active:
-            self.key_bind_window.draw()
-
-    def _update(self):
-        time_delta = self.ctx.clock.tick(60)/1000.0
-        self.ui_manager.update(time_delta)
-
-    def _execute(self):
-        # Здесь обработка событий pygame_gui, которые приходят из viewer
-        pass
-
-    def create_menu_button(self):
-        """Создание нескольких кнопок на панели"""
-        print(f"[DEBUG] UIManagerObject.create_menu_button: создание кнопок")
-        button_width = int(100 * self.ctx.k_size)
-        button_height = int(30 * self.ctx.k_size)
-        button_margin = int(10 * self.ctx.k_size)
-        
-        self.menu_buttons = []
-        
-        # Кнопка "Меню"
-        btn1 = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(
-                self.ctx.padding, 
-                (self.ctx.panel_height - button_height) // 2, 
-                button_width, 
-                button_height
-            ),
-            text="Меню",
-            manager=self.ui_manager
-        )
-        self.menu_buttons.append(btn1)
-        
-        # Кнопка "Настройки"
-        btn2 = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(
-                self.ctx.padding + button_width + button_margin, 
-                (self.ctx.panel_height - button_height) // 2, 
-                button_width, 
-                button_height
-            ),
-            text='Настройки',
-            manager=self.ui_manager
-        )
-        self.menu_buttons.append(btn2)
-        
-        # Кнопка "Помощь"
-        btn3 = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(
-                self.ctx.padding + (button_width + button_margin) * 2, 
-                (self.ctx.panel_height - button_height) // 2, 
-                button_width, 
-                button_height
-            ),
-            text='Помощь',
-            manager=self.ui_manager
-        )
-        self.menu_buttons.append(btn3)
-        print(f"[DEBUG] UIManagerObject.create_menu_button: создано {len(self.menu_buttons)} кнопок")
-
-    def open_settings(self):
-        """Открывает окно настройки горячих клавиш"""
-        print(f"[DEBUG] UIManagerObject.open_settings: открытие окна настроек")
-        if self.key_bind_window and self.key_bind_window.active:
-            return
-        
-        self.key_bind_window = KeyBindWindow(self.ui_manager, self)
 
 # --- Обновленный ProgrammatorViewer ---
 class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже GameObject
@@ -258,15 +29,20 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         thumb_size: размер миниатюр (в пикселях)
         padding: отступ между изображениями
     """
-    def __init__(self, screen, image_paths, pro: Programmator, k_size=1):
+    def __init__(self, screen, pro: Programmator, k_size=1):
         super().__init__(z_order=0)
         print(f"[DEBUG] ProgrammatorViewer.__init__: начало инициализации")
         
         # === 1. Базовые параметры ===
         self.k_size = max(0.8, min(1.5, k_size))
-        self.image_paths = image_paths
+        
+        self.thumb_size = int(64 * self.k_size)
+
         self.pro = pro
         self.cmd_list = pro._commands
+        self.cols = 16
+        self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
+        self.cmd_images = GetImage(self.thumb_size).get()
         self.screen = screen
         self.clock = pygame.time.Clock()
         
@@ -278,8 +54,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         # === 3. Состояние и трекеры ===
         self._init_state_trackers()
         
-        # === 4. Загрузка ресурсов ===
-        self._init_resources()
         
         # === 7. Команды и фасад ===
         self._init_commands_and_facade()
@@ -410,18 +184,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.hovered = ValueTracker()
         self.scroll_y = 0
 
-    def _init_resources(self):
-        """Загрузка изображений и ресурсов"""
-        print(f"[DEBUG] _init_resources: загрузка изображений")
-        self.images = []
-        self.image_names = []
-        self.cmd_images = {}
-        self.load_images()
-        
-        self.cols = 16
-        self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
-        print(f"[DEBUG] Сетка: {self.cols} колонок, {self.rows} строк")
-
     def _init_commands_and_facade(self):
         """Инициализация команд и фасада для клавиш"""
         print(f"[DEBUG] _init_commands_and_facade")
@@ -463,10 +225,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def _init_final_calculations(self):
         """Финальные вычисления и создание поверхностей"""
-        print(f"[DEBUG] _init_final_calculations")
-        self.thumbnails = []
-        self.create_thumbnails()
-        self.calculate_positions()
         
         # Инициализация скроллбара
         total_content_height = self.rows * (self.thumb_size + self.padding) + self.padding
@@ -573,80 +331,11 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         except Exception as e:
             print(f"[DEBUG] Ошибка вставки: {e}")
 
-    def calculate_positions(self):
-        """
-        Рассчитывает позиции для всех миниатюр
-        Сохраняет словарь {i: (x, y)} для всех индексов
-        """
-        self.positions = {}
-        
-        for row in range(self.rows):
-            for col in range(self.cols):
-                i = row * self.cols + col
-                if i >= len(self.thumbnails):
-                    break
-                
-                x = self.padding + col * (self.thumb_size + self.padding) + self.offsetW
-                y = self.padding + row * (self.thumb_size + self.padding) + self.offsetH
-                
-                self.positions[i] = (x, y)
-        
-        print(f"[DEBUG] Рассчитано позиций: {len(self.positions)}")
-        
-    def load_images(self):
-        """Загружает изображения с помощью PIL"""
-        print(f"[DEBUG] load_images: загрузка {len(self.image_paths)} изображений")
-        for path in self.image_paths:
-            try:
-                img = Image.open(path)
-                self.images.append(img)
-                # Сохраняем имя файла без пути
-                name = os.path.splitext(os.path.basename(path))[0]
-                self.image_names.append(name)
-                print(f"[DEBUG] Загружено: {name}")
-            except Exception as e:
-                print(f"[DEBUG] Ошибка загрузки {path}: {e}")
-        
-        print(f"[DEBUG] Всего загружено изображений: {len(self.images)}")
-        
-    def pil_to_pygame(self, pil_image):
-        """Конвертирует PIL Image в pygame Surface"""
-        if pil_image.mode != 'RGB':
-            pil_image = pil_image.convert('RGB')
-        
-        img_array = np.array(pil_image)
-        surface = pygame.surfarray.make_surface(img_array.swapaxes(0, 1))
-        return surface
     
-    def create_thumbnails(self):
-        """Создает миниатюры для всех изображений"""
-        print(f"[DEBUG] create_thumbnails: создание миниатюр")
-        i = 0
-        for img in self.images:
-            img_copy = img.copy()
-            img_copy.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
-            
-            thumb = Image.new('RGB', (self.thumb_size, self.thumb_size), (255, 255, 255))
-            
-            offset_x = (self.thumb_size - img_copy.width) // 2
-            offset_y = (self.thumb_size - img_copy.height) // 2
-            thumb.paste(img_copy, (offset_x, offset_y))
-            
-            surface = self.pil_to_pygame(thumb)
-            self.thumbnails.append(surface)
-
-            try:
-                cmd = Command[self.image_names[i]]
-                self.cmd_images[cmd] = surface
-                print(f"[DEBUG] Команда {cmd} связана с изображением {self.image_names[i]}")
-            except KeyError:
-                print(f"[DEBUG] Команда {self.image_names[i]} не найдена в Command")
-                # Используем значение по умолчанию
-                if hasattr(Command, 'EMPTY'):
-                    self.cmd_images[Command.EMPTY] = surface
-            i += 1
         
-        print(f"[DEBUG] Создано миниатюр: {len(self.thumbnails)}")
+    
+    
+    
 
     def open_settings(self):
         """Открывает окно настройки горячих клавиш"""
@@ -742,32 +431,25 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         
         print(f"[DEBUG] Горячие клавиши настроены")
 
-def get_images(dir_folder="sprites_standart"):
-    """Получение списка изображений из папки"""
-    print(f"[DEBUG] get_images: поиск в папке {dir_folder}")
-    image_files = glob.glob(os.path.join(dir_folder, "*.png"))
-    image_files.sort()
-    print(f"[DEBUG] Найдено изображений: {len(image_files)}")
-    return image_files
+
 
 if __name__ == "__main__":
     print("[DEBUG] Запуск программы")
     
-    window_width, window_height = 1280, 760
+    window_width, window_height = 1250, 760
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
     pygame.display.set_caption("Programmator Viewer v6")
     print(f"[DEBUG] Окно создано: {window_width}x{window_height}")
 
-    img_files = get_images()
     encoded_string = "XQAAgACzAAAAAAAAAAAZADAMYCDURSxK8GR5e/2nd+V9B2fs+9LemstWZRQBmMQiE4IOuXqySGdcZtrDkPe00KEs+KiBkaH1Dx0a4GlBU6a90Uy5qp5AHk4BJ9dul//0RfUyVcEDj28w/394ryD97MbhFAMFuVwQPzKLgA=="
     v_k = [0.5, 1, 1.5]
 
     pro = Programmator()
     print("[DEBUG] Programmator создан")
     
-    pro_view = ProgrammatorViewer(screen, img_files, pro, k_size=v_k[1])
+    pro_view = ProgrammatorViewer(screen, pro)
     print("[DEBUG] ProgrammatorViewer создан")
 
     managerGO = GameObjectManager()
