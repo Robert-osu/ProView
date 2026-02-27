@@ -33,13 +33,16 @@ class GridObject(GameObject):
         print(f"[DEBUG] GridObject.__init__: viewer_context={viewer_context}, z_order={z_order}")
         self.ctx = viewer_context # Ссылка на главный класс с данными
         self.screen = self.ctx.screen
-        self.isdraw = self.ctx.need_redraw
 
     def _draw(self):
-        if self.ctx.need_redraw:
+        if self.ctx.re_grid:
+            # Очищаем экран
+            self.screen.fill((50, 50, 50))
+
             self.draw_grid()
-            pygame.display.flip()
-            self.ctx.need_redraw = False
+            self.ctx.re_grid = False
+            self.ctx.re_ui = True
+            self.ctx.re_top = True
 
     def _update(self):
         # Обновление, связанное с сеткой (например, скролл)
@@ -128,7 +131,9 @@ class TopPanelObject(GameObject):
 
     def _draw(self):
         # Рисует панель поверх сетки
-        self.draw_top_panel()
+        if self.ctx.re_top:
+            self.draw_top_panel()
+            self.ctx.re_top = False
 
     def _update(self):
         # Обновление, связанное с сеткой (например, скролл)
@@ -170,12 +175,12 @@ class UIManagerObject(GameObject):
         self.create_menu_button()
 
     def _draw(self):
-        if self.ctx.menu_need_redraw:
+        if self.ctx.re_ui:
             # Рисуем UI поверх всего
             self.ui_manager.draw_ui(self.ctx.screen)
 
             pygame.display.flip()
-            self.ctx.menu_need_redraw = False
+            self.ctx.re_ui = False
         if self.key_bind_window and self.key_bind_window.active:
             self.key_bind_window.draw()
 
@@ -291,8 +296,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         print(f"[DEBUG] ProgrammatorViewer.__init__: инициализация завершена")
 
     def _draw(self):
-        # Очищаем экран
-        self.screen.fill((50, 50, 50))
+        pass
 
     def _update(self):
         # Обновление
