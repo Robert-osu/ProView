@@ -323,6 +323,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
                 print(f"[DEBUG] Текст из буфера: {clipboard_text[:50]}...")
                 self.pro.copy(clipboard_text)
                 self.update_from_pro()
+                self.grid._create_all_cells()
                 self.re_grid = True
             else:
                 print("[DEBUG] Буфер обмена пуст или содержит не текст")
@@ -395,8 +396,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
                 self.scrollbar.scroll_y = self.scroll_y
                 self.scrollbar.update_handle()
         
-        # Пересчитываем позиции (на случай изменения размеров)
-        self.calculate_positions()
         
         # Отмечаем необходимость перерисовки
         self.re_grid = True
