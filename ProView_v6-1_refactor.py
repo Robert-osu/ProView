@@ -35,7 +35,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
         self.pro = pro
         self.cmd_list = pro._commands # commands
-        self.cols = 8
+        self.cols = 16
         self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
         self.cmd_images = GetImage(self.thumb_size).get() # шаблон команд
         self.screen = screen
@@ -411,6 +411,8 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.change_cell_twoargs_cmd = ChangeCellCommand(self, command_group=Command.TWO_ARGS)
         self.change_cell_shiftw_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_W)
         self.change_cell_shiftd_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_D)
+        self.change_cell_shifts_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_S)
+        self.change_cell_shifta_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_A)
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
@@ -428,13 +430,15 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.change_cell_twoargs_cmd)
         self.key_facade.bind_scan_code(26, pygame.KMOD_SHIFT, self.change_cell_shiftw_cmd)
         self.key_facade.bind_scan_code(7, pygame.KMOD_SHIFT, self.change_cell_shiftd_cmd)
+        self.key_facade.bind_scan_code(22, pygame.KMOD_SHIFT, self.change_cell_shifts_cmd)
+        self.key_facade.bind_scan_code(4, pygame.KMOD_SHIFT, self.change_cell_shifta_cmd)
         
 
 
 
 if __name__ == "__main__":
     
-    window_width, window_height = 700, 760
+    window_width, window_height = 1250, 760
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)

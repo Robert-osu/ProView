@@ -108,6 +108,8 @@ class ChangeCellCommand(KeyCommand):
                     key = (dir1, dir2)
                     if key in Command.CHECK_DIAGONAL:
                         current_cmd = Command.CHECK_DIAGONAL[key]
+                    else:
+                        current_cmd = dir2
                 else:
                     current_cmd = self.next(id)
             elif id and self.viewer.cmd_list[id] in self.command_group:
