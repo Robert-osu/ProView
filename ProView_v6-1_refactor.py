@@ -35,7 +35,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
         self.pro = pro
         self.cmd_list = pro._commands # commands
-        self.cols = 16
+        self.cols = 8
         self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
         self.cmd_images = GetImage(self.thumb_size).get() # шаблон команд
         self.screen = screen
@@ -253,6 +253,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     def change_cell(self, cmd:Command):
         id = self.hovered.current
         if id != None and id < len(self.cmd_list):
+            id = int(id)
             self.cmd_list[id] = cmd
             self.grid.update_cell_image(id, cmd)
             self.re_grid = True
@@ -331,12 +332,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         except Exception as e:
             print(f"[DEBUG] Ошибка вставки: {e}")
 
-    
-        
-    
-    
-    
-
     def open_settings(self):
         """Открывает окно настройки горячих клавиш"""
         print("[DEBUG] open_settings: открытие окна настроек")
@@ -411,7 +406,9 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.open_settings_cmd = OpenSettingsCommand(self)
         self.copy_clipboard_cmd = CopyToClipboardCommand(self)
         self.paste_clipboard_cmd = PasteFromClipboardCommand(self)
-        self.change_cell_cmd = ChangeCellCommand(self, Command.ALARM)
+        # ввод команд программатора
+        self.change_cell_cmd = ChangeCellCommand(self, cmd=Command.ALARM)
+        self.change_cell_twoargs_cmd = ChangeCellCommand(self, command_group=Command.TWO_ARGS)
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
@@ -426,13 +423,14 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
         self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
         self.key_facade.bind_scan_code(29, pygame.KMOD_CTRL, self.change_cell_cmd)
+        self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.change_cell_twoargs_cmd)
         
 
 
 
 if __name__ == "__main__":
     
-    window_width, window_height = 1250, 760
+    window_width, window_height = 700, 760
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)

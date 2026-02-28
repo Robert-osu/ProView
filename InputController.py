@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import pygame
 
 from test_binding1 import KeyBindWindow
+from Command import Command
 
 class KeyCommand(ABC):
     @abstractmethod
@@ -68,16 +69,42 @@ class PasteFromClipboardCommand(KeyCommand):
         if hasattr(self.viewer, 'paste_from_clipboard'):
             self.viewer.paste_from_clipboard()
 
+# class ChangeCellCommand(KeyCommand):
+#     def __init__(self, viewer, cmd):
+#         self.viewer = viewer
+#         self.cmd = cmd
+    
+#     def execute(self):
+#         print("изменение клетки")
+#         # Логика
+#         if hasattr(self.viewer, 'change_cell'):
+#             self.viewer.change_cell(self.cmd)
+
+
 class ChangeCellCommand(KeyCommand):
-    def __init__(self, viewer, cmd):
+    def __init__(self, viewer, cmd=None, command_group=None):
         self.viewer = viewer
         self.cmd = cmd
+        self.command_group = list(command_group) if command_group else None
+        self.current_index = 0
     
     def execute(self):
-        print("изменение клетки")
-        # Логика
+        current_cmd = Command.EMPTY
+        # Определяем какую команду выполнять
+        if self.command_group:
+            current_cmd = self.command_group[self.current_index]
+            # Используем команду из группы
+            if self.current_index + 1 >= len(self.command_group):
+                self.current_index = 0
+            else:
+                self.current_index += 1
+        else:
+            # Используем переданную команду
+            current_cmd = self.cmd
+        
+        # Выполняем действие
         if hasattr(self.viewer, 'change_cell'):
-            self.viewer.change_cell(self.cmd)
+            self.viewer.change_cell(current_cmd)
 
 # ========== ПАТТЕРН ФАСАД ==========
 class KeyInputFacade:
