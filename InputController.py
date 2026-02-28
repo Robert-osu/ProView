@@ -90,14 +90,33 @@ class ChangeCellCommand(KeyCommand):
     
     def execute(self):
         current_cmd = Command.EMPTY
+        id = None
+
         # Определяем какую команду выполнять
         if self.command_group:
-            current_cmd = self.command_group[self.current_index]
-            # Используем команду из группы
-            if self.current_index + 1 >= len(self.command_group):
-                self.current_index = 0
+            # костыль
+            if self.viewer.hovered.current:
+                id = int(self.viewer.hovered.current)
+            if id and self.viewer.cmd_list[id] in Command.CHECK_ORTO and self.command_group[0] in Command.CHECK_ORTO:
+                # Комбинирует два ортогональных направления в диагональное
+                dir1 = self.viewer.cmd_list[id]
+                dir2 = self.command_group[0]
+                
+                # Проверяем, что направления не одинаковые
+                if dir1 != dir2:
+                    # Ищем комбинацию в словаре
+                    key = (dir1, dir2)
+                    if key in Command.CHECK_DIAGONAL:
+                        current_cmd = Command.CHECK_DIAGONAL[key]
+                else:
+                    current_cmd = self.next(id)
+            elif id and self.viewer.cmd_list[id] in self.command_group:
+                current_cmd = self.next(id)
             else:
-                self.current_index += 1
+                self.current_index = 0
+                current_cmd = self.command_group[self.current_index]
+            # Используем команду из группы
+            self.inc()
         else:
             # Используем переданную команду
             current_cmd = self.cmd
@@ -105,6 +124,18 @@ class ChangeCellCommand(KeyCommand):
         # Выполняем действие
         if hasattr(self.viewer, 'change_cell'):
             self.viewer.change_cell(current_cmd)
+
+    def next(self, id):
+        current = self.viewer.cmd_list[id]
+        i = self.command_group.index(current)
+        next = (i + 1) % len(self.command_group)  # % для циклического перехода
+        return self.command_group[next]
+
+    def inc(self):
+        if self.current_index + 1 >= len(self.command_group):
+            self.current_index = 0
+        else:
+            self.current_index += 1
 
 # ========== ПАТТЕРН ФАСАД ==========
 class KeyInputFacade:

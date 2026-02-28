@@ -246,9 +246,38 @@ Command.ACTION = {Command.MOVE_BOTTOM, Command.MOVE_LEFT,
                   Command.USE_NANOBOT, Command.USE_POLIMER, Command.USE_PROTON,
                   Command.USE_RAZRYAD, Command.USE_REMBOT, Command.USE_ZZ}
 
+Command.Q = (Command.RETURN, Command.RETURN_ARGUMENT, Command.RETURN_STATE)
+Command.W = (Command.MOVE_TOP, Command.DIR_TOP, Command.DIR_INV_TOP)
+Command.A = (Command.MOVE_LEFT, Command.DIR_LEFT, Command.DIR_INV_LEFT)
+Command.S = (Command.MOVE_BOTTOM, Command.DIR_BOTTOM, Command.DIR_INV_BOTTOM)
+Command.D = (Command.MOVE_RIGHT, Command.DIR_RIGHT, Command.DIR_INV_RIGHT)
+Command.SHIFT_W = (Command.CHECK_TOP, Command.OFFSET_TOP)
+Command.SHIFT_A = (Command.CHECK_LEFT, Command.OFFSET_LEFT)
+Command.SHIFT_S = (Command.CHECK_BOTTOM, Command.OFFSET_BOTTOM)
+Command.SHIFT_D = (Command.CHECK_RIGHT, Command.OFFSET_RIGHT)
+Command.WASD = (Command.CHECK_TOP_LEFT, Command.CHECK_BOTTOM_LEFT, Command.CHECK_BOTTOM_RIGHT, Command.CHECK_TOP_RIGHT)
+Command.CHECK_ORTO = (Command.CHECK_TOP, Command.CHECK_LEFT, Command.CHECK_BOTTOM, Command.CHECK_RIGHT)
+
+# Словарь для маппинга направлений в диагональные
+Command.CHECK_DIAGONAL = {
+    # (направление1, направление2): диагональное направление
+    (Command.CHECK_TOP, Command.CHECK_LEFT): Command.CHECK_TOP_LEFT,
+    (Command.CHECK_TOP, Command.CHECK_RIGHT): Command.CHECK_TOP_RIGHT,
+    (Command.CHECK_BOTTOM, Command.CHECK_LEFT): Command.CHECK_BOTTOM_LEFT,
+    (Command.CHECK_BOTTOM, Command.CHECK_RIGHT): Command.CHECK_BOTTOM_RIGHT,
+    
+    # Также учтем обратный порядок
+    (Command.CHECK_LEFT, Command.CHECK_TOP): Command.CHECK_TOP_LEFT,
+    (Command.CHECK_RIGHT, Command.CHECK_TOP): Command.CHECK_TOP_RIGHT,
+    (Command.CHECK_LEFT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_LEFT,
+    (Command.CHECK_RIGHT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_RIGHT,
+}
+
 Command.CONDITION = {}
 
 if __name__ == "__main__":
+
+    print(Command.CHECK_ORTO.index(Command.CHECK_LEFT_HAND))
 
     # Проверка
     print(f"TWO_ARGS: {sorted([c.name for c in Command.TWO_ARGS])}")

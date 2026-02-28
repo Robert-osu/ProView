@@ -409,6 +409,8 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         # ввод команд программатора
         self.change_cell_cmd = ChangeCellCommand(self, cmd=Command.ALARM)
         self.change_cell_twoargs_cmd = ChangeCellCommand(self, command_group=Command.TWO_ARGS)
+        self.change_cell_shiftw_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_W)
+        self.change_cell_shiftd_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_D)
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
@@ -424,6 +426,8 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
         self.key_facade.bind_scan_code(29, pygame.KMOD_CTRL, self.change_cell_cmd)
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.change_cell_twoargs_cmd)
+        self.key_facade.bind_scan_code(26, pygame.KMOD_SHIFT, self.change_cell_shiftw_cmd)
+        self.key_facade.bind_scan_code(7, pygame.KMOD_SHIFT, self.change_cell_shiftd_cmd)
         
 
 
