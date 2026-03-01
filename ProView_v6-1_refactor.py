@@ -6,13 +6,14 @@ from Programmator import Programmator
 from Scrollbar import Scrollbar
 from InputController import *
 
-from my_lib.GameObjectRenderer import GameObject, GameObjectManager # Импортируем новое
+from my_lib.GameObjectRenderer import GameObject, GameObjectManager
 
 from Grid import GridObject
 from TopPanel import TopPanelObject
 from UIManager import UIManagerObject
 
 from utils import ValueTracker, GetImage
+from TextInput import TextInput
 
 
 
@@ -40,6 +41,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.cmd_images = GetImage(self.thumb_size).get() # шаблон команд
         self.screen = screen
         self.clock = pygame.time.Clock()
+        self.x = 0
+        self.y = 0
+        self.text = None
+        self.is_input = False
         
         self._init_all()
 
@@ -82,12 +87,20 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             # Обработка клавиш
             elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 print(f"[DEBUG] Событие клавиши: {event.key}")
-                self.key_facade.handle_event(event)
+                if self.is_input:
+                    self.text.handle_event(event)
+                else:
+                    self.key_facade.handle_event(event)
                 
             # Обработка мыши
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(f"[DEBUG] Нажатие мыши: кнопка {event.button}")
                 if event.button == 1:  # Левая кнопка мыши
+                    if self.text:
+                        id = self.hovered.current
+                        if id and not (self.cmd_list[id] in Command.NO_ARGS):
+                            self.text.handle_event(event)
+                            self.is_input = True
                     if self.selected.current != new_hovered:
                         self.selected.update(new_hovered)
                         print(f"[DEBUG] Выбран элемент: {new_hovered}")
@@ -285,12 +298,18 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         if index >= len(self.cmd_list):
             return None
         
+        if index == self.hovered.current:
+            return index
+
         # Проверяем, точно ли мышь внутри миниатюры (а не в отступах)
         x = self.padding + col * (self.thumb_size + self.padding) + self.offsetW
         y = self.padding + row * (self.thumb_size + self.padding) - self.scroll_y + self.offsetH
         
         if (x <= mouse_x <= x + self.thumb_size and 
             y <= mouse_y <= y + self.thumb_size):
+            print("x: ", x, "y: ", y)
+            self.x = x
+            self.y = y
             return index
         
         return None

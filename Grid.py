@@ -1,11 +1,14 @@
 import pygame
 from my_lib.GameObjectRenderer import GameObject
+from TextInput import TextInput
 
 class GridObject(GameObject):
     def __init__(self, viewer_context, z_order=1):
         super().__init__(z_order)
         self.ctx = viewer_context
         self.screen = self.ctx.screen
+        self.text = None
+        self.hovered = None
         
         # Параметры сетки
         self.cell_size = self.ctx.thumb_size + self.ctx.padding
@@ -16,6 +19,33 @@ class GridObject(GameObject):
         
         # Предварительно создаем все ячейки
         self._create_all_cells()
+    
+    def _draw(self):
+        if self.ctx.re_grid:
+            self.screen.fill((50, 50, 50))
+            self.draw_grid()
+            self.ctx.re_grid = False
+            self.ctx.re_ui = True
+            self.ctx.re_top = True
+    
+    def _update(self):
+        pass
+    
+    def _execute(self):
+        self.input_text()
+
+    def input_text(self):
+        if self.text == None:
+            self.text = TextInput(self.ctx, self.ctx.x + 3, self.ctx.y + 3, 64, 64, 6)
+            self.ctx.manager.add(self.text, self.text.z_order)
+            self.hovered = self.ctx.hovered.current
+            self.ctx.text = self.text
+        if self.hovered != self.ctx.hovered.current:
+            self.ctx.manager.delete(self.text.id)
+            self.text = None
+            self.ctx.text = None
+            self.ctx.is_input = False
+            self.ctx.re_grid = True
     
     def update_cell_image(self, idx, cmd):
         """Обновляет кеш изображения для указанной ячейки"""
@@ -42,21 +72,7 @@ class GridObject(GameObject):
             pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
             
             self.cell_surfaces[idx] = cell
-    
-    def _draw(self):
-        if self.ctx.re_grid:
-            self.screen.fill((50, 50, 50))
-            self.draw_grid()
-            self.ctx.re_grid = False
-            self.ctx.re_ui = True
-            self.ctx.re_top = True
-    
-    def _update(self):
-        pass
-    
-    def _execute(self):
-        pass
-    
+            
     def draw_grid(self):
         """Рисует сетку с изображениями"""
         self.ctx.update_visible_range()
