@@ -271,31 +271,31 @@ Command.CHECK_DIAGONAL = {
     (Command.CHECK_LEFT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_LEFT,
     (Command.CHECK_RIGHT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_RIGHT,
 }
-Command.E = {Command.START, Command.STOP, Command.RESPAWN_TO}
-Command.R = {Command.ROTATE_LEFT, Command.ROTATE_RIGHT, Command.DIR_RANDOM}
-Command.T = {Command.STD_DIG, Command.STD_BUILD, Command.STD_HEAL, Command.STD_DIG_AROUND}
-Command.Y = {Command.FLIP}
-Command.I = {Command.YES_NO, Command.NO_YES}
-Command.O = {Command.OR, Command.AND}
-Command.F = {Command.MOVE_FORWARD}
-Command.SHIFT_F = {Command.CHECK_FORWARD, Command.OFFSET_FORWARD, Command.CHECK_LEFT_HAND, Command.CHECK_RIGHT_HAND}
-Command.G = {Command.GO_TO, Command.CALL_FUNC, Command.CALL_FUNC_CONDITION, Command.CALL_FUNC_STATE}
-Command.H = {Command.IS_HP_LESS_100, Command.IS_HP_LESS_50}
-Command.J = {Command.IS_IN_GUN, Command.AMMO}
-Command.L = {Command.LABEL}
-Command.Z = {Command.DIG, Command.BUILD_BLOCK, Command.GEO, Command.BUILD_ROAD, Command.HEAL, Command.BUILD_QUADRO}
-Command.SHIFT_Z = {Command.BUILD_WB, Command.USE_BOOM, Command.USE_PROTON, Command.USE_RAZRYAD}
-Command.X = {Command.USE_GEOPACK, Command.USE_ZZ, Command.USE_POLIMER, Command.USE_C190}
-Command.SHIFT_X = {Command.CRAFT, Command.UP, Command.USE_NANOBOT, Command.USE_REMBOT}
-Command.C = {Command.IS_NOT_EMPTY, Command.IS_EMPTY, Command.IS_FALLING, Command.IS_CRYSTAL, Command.IS_ALIVE_CRYSTAL, 
-             Command.IS_FALLING_GRAVEL, Command.IS_FALLING_SAND, Command.IS_BREAKABLE, Command.IS_UNBREAKABLE, Command.IS_SLIME}
-Command.SHIFT_C = {Command.IS_CHERNOSKAL, Command.IS_KRASNOSKAL, Command.IS_GREEN_BLOCK, Command.IS_YELLOW_BLOCK, Command.IS_RED_BLOCK,
-                   Command.IS_OPORA, Command.IS_QUADRO, Command.IS_ROAD, Command.IS_BOX}
-Command.V = {Command.VAR_EQUAL, Command.VAR_LESS, Command.VAR_GREATER}
-Command.B = {Command.ALARM, Command.I_DONT_KNOW4, Command.I_DONT_KNOW5}
-Command.SHIFT_B = {Command.MODE_MANUAL, Command.MODE_AUTO}
-Command.M = {Command.AUTO_DIG_ON, Command.AUTO_DIG_OFF, Command.AGR_ON, Command.AGR_OFF}
-Command.BACKSPACE = {Command.NEWLINE, Command.EMPTY}
+Command.E = (Command.START, Command.STOP, Command.RESPAWN_TO)
+Command.R = (Command.ROTATE_LEFT, Command.ROTATE_RIGHT, Command.DIR_RANDOM)
+Command.T = (Command.STD_DIG, Command.STD_BUILD, Command.STD_HEAL, Command.STD_DIG_AROUND)
+#Command.Y = (Command.FLIP)
+Command.I = (Command.YES_NO, Command.NO_YES)
+Command.O = (Command.OR, Command.AND)
+#Command.F = (Command.MOVE_FORWARD)
+Command.SHIFT_F = (Command.CHECK_FORWARD, Command.OFFSET_FORWARD, Command.CHECK_LEFT_HAND, Command.CHECK_RIGHT_HAND)
+Command.G = (Command.GO_TO, Command.CALL_FUNC, Command.CALL_FUNC_CONDITION, Command.CALL_FUNC_STATE)
+Command.H = (Command.IS_HP_LESS_100, Command.IS_HP_LESS_50)
+Command.J = (Command.IS_IN_GUN, Command.AMMO)
+#Command.L = (Command.LABEL)
+Command.Z = (Command.DIG, Command.BUILD_BLOCK, Command.GEO, Command.BUILD_ROAD, Command.HEAL, Command.BUILD_QUADRO)
+Command.SHIFT_Z = (Command.BUILD_WB, Command.USE_BOOM, Command.USE_PROTON, Command.USE_RAZRYAD)
+Command.X = (Command.USE_GEOPACK, Command.USE_ZZ, Command.USE_POLIMER, Command.USE_C190)
+Command.SHIFT_X = (Command.CRAFT, Command.UP, Command.USE_NANOBOT, Command.USE_REMBOT)
+Command.C = (Command.IS_NOT_EMPTY, Command.IS_EMPTY, Command.IS_FALLING, Command.IS_CRYSTAL, Command.IS_ALIVE_CRYSTAL, 
+             Command.IS_FALLING_GRAVEL, Command.IS_FALLING_SAND, Command.IS_BREAKABLE, Command.IS_UNBREAKABLE, Command.IS_SLIME)
+Command.SHIFT_C = (Command.IS_CHERNOSKAL, Command.IS_KRASNOSKAL, Command.IS_GREEN_BLOCK, Command.IS_YELLOW_BLOCK, Command.IS_RED_BLOCK,
+                   Command.IS_OPORA, Command.IS_QUADRO, Command.IS_ROAD, Command.IS_BOX)
+Command.V = (Command.VAR_EQUAL, Command.VAR_LESS, Command.VAR_GREATER)
+Command.B = (Command.ALARM, Command.I_DONT_KNOW4, Command.I_DONT_KNOW5)
+Command.SHIFT_B = (Command.MODE_MANUAL, Command.MODE_AUTO)
+Command.M = (Command.AUTO_DIG_ON, Command.AUTO_DIG_OFF, Command.AGR_ON, Command.AGR_OFF)
+Command.BACKSPACE = (Command.NEWLINE, Command.EMPTY)
 
 Command.CONDITION = {}
 

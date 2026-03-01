@@ -407,12 +407,41 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.copy_clipboard_cmd = CopyToClipboardCommand(self)
         self.paste_clipboard_cmd = PasteFromClipboardCommand(self)
         # ввод команд программатора
-        self.change_cell_cmd = ChangeCellCommand(self, cmd=Command.ALARM)
-        self.change_cell_twoargs_cmd = ChangeCellCommand(self, command_group=Command.TWO_ARGS)
         self.change_cell_shiftw_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_W)
         self.change_cell_shiftd_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_D)
         self.change_cell_shifts_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_S)
         self.change_cell_shifta_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_A)
+        self.change_cell_w_cmd = ChangeCellCommand(self, command_group=Command.W)
+        self.change_cell_d_cmd = ChangeCellCommand(self, command_group=Command.D)
+        self.change_cell_s_cmd = ChangeCellCommand(self, command_group=Command.S)
+        self.change_cell_a_cmd = ChangeCellCommand(self, command_group=Command.A)
+        self.change_cell_q_cmd = ChangeCellCommand(self, command_group=Command.Q)
+        self.change_cell_e_cmd = ChangeCellCommand(self, command_group=Command.E)
+        self.change_cell_r_cmd = ChangeCellCommand(self, command_group=Command.R)
+        self.change_cell_t_cmd = ChangeCellCommand(self, command_group=Command.T)
+        self.change_cell_y_cmd = ChangeCellCommand(self, cmd=Command.FLIP)
+        self.change_cell_i_cmd = ChangeCellCommand(self, command_group=Command.I)
+        self.change_cell_o_cmd = ChangeCellCommand(self, command_group=Command.O)
+
+        self.change_cell_shiftf_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_F)
+        self.change_cell_f_cmd = ChangeCellCommand(self, cmd=Command.MOVE_FORWARD)
+        self.change_cell_g_cmd = ChangeCellCommand(self, command_group=Command.G)
+        self.change_cell_h_cmd = ChangeCellCommand(self, command_group=Command.H)
+        self.change_cell_j_cmd = ChangeCellCommand(self, command_group=Command.J)
+        self.change_cell_l_cmd = ChangeCellCommand(self, cmd=Command.LABEL)
+
+        self.change_cell_shiftz_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_Z)
+        self.change_cell_z_cmd = ChangeCellCommand(self, command_group=Command.Z)
+        self.change_cell_shiftx_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_X)
+        self.change_cell_x_cmd = ChangeCellCommand(self, command_group=Command.X)
+        self.change_cell_shiftc_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_C)
+        self.change_cell_c_cmd = ChangeCellCommand(self, command_group=Command.C)
+        self.change_cell_v_cmd = ChangeCellCommand(self, command_group=Command.V)
+        self.change_cell_shiftb_cmd = ChangeCellCommand(self, command_group=Command.SHIFT_B)
+        self.change_cell_b_cmd = ChangeCellCommand(self, command_group=Command.B)
+        self.change_cell_m_cmd = ChangeCellCommand(self, command_group=Command.M)
+
+        self.change_cell_backspace_cmd = ChangeCellCommand(self, command_group=Command.BACKSPACE)
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
@@ -426,12 +455,44 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         # Привязка комбинаций с модификаторами
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
         self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
-        self.key_facade.bind_scan_code(29, pygame.KMOD_CTRL, self.change_cell_cmd)
-        self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.change_cell_twoargs_cmd)
+
         self.key_facade.bind_scan_code(26, pygame.KMOD_SHIFT, self.change_cell_shiftw_cmd)
         self.key_facade.bind_scan_code(7, pygame.KMOD_SHIFT, self.change_cell_shiftd_cmd)
         self.key_facade.bind_scan_code(22, pygame.KMOD_SHIFT, self.change_cell_shifts_cmd)
         self.key_facade.bind_scan_code(4, pygame.KMOD_SHIFT, self.change_cell_shifta_cmd)
+
+        self.key_facade.bind_scan_code(26, pygame.KMOD_NONE, self.change_cell_w_cmd)
+        self.key_facade.bind_scan_code(7, pygame.KMOD_NONE, self.change_cell_d_cmd)
+        self.key_facade.bind_scan_code(22, pygame.KMOD_NONE, self.change_cell_s_cmd)
+        self.key_facade.bind_scan_code(4, pygame.KMOD_NONE, self.change_cell_a_cmd)
+        self.key_facade.bind_scan_code(20, pygame.KMOD_NONE, self.change_cell_q_cmd)
+        self.key_facade.bind_scan_code(8, pygame.KMOD_NONE, self.change_cell_e_cmd)
+        self.key_facade.bind_scan_code(21, pygame.KMOD_NONE, self.change_cell_r_cmd)
+        self.key_facade.bind_scan_code(23, pygame.KMOD_NONE, self.change_cell_t_cmd)
+        self.key_facade.bind_scan_code(28, pygame.KMOD_NONE, self.change_cell_y_cmd)
+        self.key_facade.bind_scan_code(12, pygame.KMOD_NONE, self.change_cell_i_cmd)
+        self.key_facade.bind_scan_code(18, pygame.KMOD_NONE, self.change_cell_o_cmd)
+
+        self.key_facade.bind_scan_code(9, pygame.KMOD_SHIFT, self.change_cell_shiftf_cmd)
+        self.key_facade.bind_scan_code(9, pygame.KMOD_NONE, self.change_cell_f_cmd)
+        self.key_facade.bind_scan_code(10, pygame.KMOD_NONE, self.change_cell_g_cmd)
+        self.key_facade.bind_scan_code(11, pygame.KMOD_NONE, self.change_cell_h_cmd)
+        self.key_facade.bind_scan_code(13, pygame.KMOD_NONE, self.change_cell_j_cmd)
+        self.key_facade.bind_scan_code(15, pygame.KMOD_NONE, self.change_cell_l_cmd)
+
+        self.key_facade.bind_scan_code(29, pygame.KMOD_SHIFT, self.change_cell_shiftz_cmd)
+        self.key_facade.bind_scan_code(29, pygame.KMOD_NONE, self.change_cell_z_cmd)
+        self.key_facade.bind_scan_code(27, pygame.KMOD_SHIFT, self.change_cell_shiftx_cmd)
+        self.key_facade.bind_scan_code(27, pygame.KMOD_NONE, self.change_cell_x_cmd)
+        self.key_facade.bind_scan_code(6, pygame.KMOD_SHIFT, self.change_cell_shiftc_cmd)
+        self.key_facade.bind_scan_code(6, pygame.KMOD_NONE, self.change_cell_c_cmd)
+        self.key_facade.bind_scan_code(25, pygame.KMOD_NONE, self.change_cell_v_cmd)
+        self.key_facade.bind_scan_code(5, pygame.KMOD_SHIFT, self.change_cell_shiftb_cmd)
+        self.key_facade.bind_scan_code(5, pygame.KMOD_NONE, self.change_cell_b_cmd)
+        self.key_facade.bind_scan_code(16, pygame.KMOD_NONE, self.change_cell_m_cmd)
+
+        self.key_facade.bind_scan_code(42, pygame.KMOD_NONE, self.change_cell_backspace_cmd)
+        
         
 
 

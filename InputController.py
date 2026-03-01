@@ -202,6 +202,9 @@ class KeyInputFacade:
                 if event.scancode == scan and (event.mod & mod):
                     cmd.execute()
                     return
+                elif event.scancode == scan and (mod == pygame.KMOD_NONE):
+                    cmd.execute()
+                    return
             
             # Стандартная проверка
             self._trigger_command(event.key, event.mod)
