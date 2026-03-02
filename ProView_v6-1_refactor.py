@@ -294,7 +294,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         if col >= self.cols or row >= self.rows:
             return None
         
-        index = row * self.cols + col
+        index = int(row * self.cols + col)
         if index >= len(self.cmd_list):
             return None
         
