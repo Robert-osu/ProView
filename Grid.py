@@ -7,8 +7,6 @@ class GridObject(GameObject):
         super().__init__(z_order)
         self.ctx = viewer_context
         self.screen = self.ctx.screen
-        self.text = None
-        self.hovered = None
         
         # Параметры сетки
         self.cell_size = self.ctx.thumb_size + self.ctx.padding
@@ -32,20 +30,20 @@ class GridObject(GameObject):
         pass
     
     def _execute(self):
-        self.input_text()
+        pass
 
-    def input_text(self):
-        if self.text == None:
-            self.text = TextInput(self.ctx, self.ctx.x + 3, self.ctx.y + 3, 64, 64, 6)
-            self.ctx.manager.add(self.text, self.text.z_order)
-            self.hovered = self.ctx.hovered.current
-            self.ctx.text = self.text
-        if self.hovered != self.ctx.hovered.current:
-            self.ctx.manager.delete(self.text.id)
-            self.text = None
-            self.ctx.text = None
-            self.ctx.is_input = False
-            self.ctx.re_grid = True
+    # def input_text(self):
+    #     if self.text == None:
+    #         self.text = TextInput(self.ctx, self.ctx.x + 3, self.ctx.y + 3, 64, 64, 6)
+    #         self.ctx.manager.add(self.text, self.text.z_order)
+    #         self.hovered = self.ctx.hovered.current
+    #         self.ctx.text = self.text
+    #     if self.hovered != self.ctx.hovered.current:
+    #         self.ctx.manager.delete(self.text.id)
+    #         self.text = None
+    #         self.ctx.text = None
+    #         self.ctx.is_input = False
+    #         self.ctx.re_grid = True
     
     def update_cell_image(self, idx, cmd):
         """Обновляет кеш изображения для указанной ячейки"""

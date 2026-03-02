@@ -43,7 +43,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.clock = pygame.time.Clock()
         self.x = 0
         self.y = 0
-        self.text = None
+        
         self.is_input = False
         
         self._init_all()
@@ -64,12 +64,13 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         new_hovered = self.check_hover()
         time_delta = self.clock.tick(60)/1000.0
         
-        # Обновляем hovered если изменился
-        if new_hovered != self.hovered.current:
-            self.hovered.update(new_hovered)
-        
         # Обработка событий
         for event in pygame.event.get():
+            # Обновляем hovered если изменился
+            if new_hovered != self.hovered.current:
+                self.hovered.update(new_hovered)
+                self.handle_text_input(event, True)
+
             if event.type == pygame.QUIT:
                 print(f"[DEBUG] Получен сигнал QUIT")
                 return False  # Сигнал для выхода
@@ -86,9 +87,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             
             # Обработка клавиш
             elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-                print(f"[DEBUG] Событие клавиши: {event.key}")
+                print(f"[DEBUG] {event.type} Событие клавиши: {event.key}")
                 if self.is_input:
                     self.text.handle_event(event)
+                    self.re_grid = True
                 else:
                     self.key_facade.handle_event(event)
                 
@@ -96,11 +98,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(f"[DEBUG] Нажатие мыши: кнопка {event.button}")
                 if event.button == 1:  # Левая кнопка мыши
-                    if self.text:
-                        id = self.hovered.current
-                        if id and not (self.cmd_list[id] in Command.NO_ARGS):
-                            self.text.handle_event(event)
-                            self.is_input = True
+                    self.handle_text_input(event)
                     if self.selected.current != new_hovered:
                         self.selected.update(new_hovered)
                         print(f"[DEBUG] Выбран элемент: {new_hovered}")
@@ -138,6 +136,22 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             self.re_grid = True
         
         return True  # Продолжаем работу
+
+    def handle_text_input(self, event, _=False):
+
+        id = self.hovered.current
+        if _:
+            self.text.off_active()
+            self.is_input = False
+            self.re_grid = True
+        elif not id:
+            pass
+        elif not (self.cmd_list[id] in Command.NO_ARGS):
+            self.text.set_rect(self.x, self.y, 64, 64)
+            self.text.on_active()
+            self.text.handle_event(event)
+            self.is_input = True
+            self.re_grid = True
 
     def _init_all(self):
         # === 2. UI размеры и константы ===
@@ -258,10 +272,12 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.grid = GridObject(self, z_order=1)
         self.top_panel = TopPanelObject(self, z_order=10)
         self.ui = UIManagerObject(self, z_order=20)
+        self.text = TextInput(self.screen, 0, 0, 0, 0)
         
         self.manager.add(self.grid, self.grid.z_order)
         self.manager.add(self.ui, self.ui.z_order)
         self.manager.add(self.top_panel, self.top_panel.z_order)
+        self.manager.add(self.text, self.text.z_order)
 
     def change_cell(self, cmd:Command):
         id = self.hovered.current
