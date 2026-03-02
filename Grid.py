@@ -1,6 +1,7 @@
 import pygame
 from my_lib.GameObjectRenderer import GameObject
 from TextInput import TextInput
+from Command import Command
 
 class GridObject(GameObject):
     def __init__(self, viewer_context, z_order=1):
@@ -61,16 +62,60 @@ class GridObject(GameObject):
         thumb_size = self.ctx.thumb_size
         padding = self.ctx.padding
         font = pygame.font.Font(None, self.ctx.font_size)
+        cmd_list = list(Command)
         
         for idx, cmd in enumerate(self.ctx.cmd_list):
             # Создаем поверхность для ячейки
             cell = self.ctx.cmd_images[cmd]
+
+            cmd = self.ctx.pro._commands[idx]
+            if cmd in Command.NO_ARGS:
+                pass
+            elif cmd in Command.ONE_ARGS:
+                if cmd == cmd_list[112]:
+                    x, y = 22, 35
+                    cell.blit(*self.render_text(idx, x=x, y=y))
+                elif cmd == cmd_list[113]:
+                    x, y = 22, 35
+                    cell.blit(*self.render_text(idx, x=x, y=y))
+                else:
+                    x, y = 30, 33
+                    cell.blit(*self.render_text(idx, x=x, y=y))
+            elif cmd in Command.TWO_ARGS:
+                pass
+
+            
             
             # Добавляем рамку
             pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
             
             self.cell_surfaces[idx] = cell
-            
+
+    def render_text(self, id, i=0, x=5, y=0, fsize=16):
+        thumb_size = self.ctx.thumb_size
+        padding = self.ctx.padding
+        # font = pygame.font.SysFont('arial', fsize)
+        font = pygame.font.Font(None, fsize)
+
+        text_color = (100, 255, 100)  # Неоновый синий
+        # text_surface = font.render(self.ctx.pro.getValue(id, i), True, text_color)
+        text_surface = font.render("WWW", True, text_color)
+        text_rect = text_surface.get_rect(center=(x, y))
+        
+        # Позиционируем текст внизу ячейки
+        # text_x = x
+        # text_y = y
+        
+        # # Добавляем фон для текста для лучшей читаемости
+        # text_bg = pygame.Surface((text_surface.get_width() + 10, 
+        #                             text_surface.get_height() + 4))
+        # text_bg.fill((30, 30, 30))
+        # text_bg.set_alpha(180)
+        # cell.blit(text_bg, (text_x - 5, text_y - 2))
+        
+        # Добавляем текст
+        return (text_surface, text_rect)
+ 
     def draw_grid(self):
         """Рисует сетку с изображениями"""
         self.ctx.update_visible_range()

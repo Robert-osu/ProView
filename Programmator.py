@@ -126,6 +126,14 @@ class Programmator:
                 self._values[index][0], self._values[index][1] = value_tuple
                 #print(self._values[index])
 
+    def getValue(self, index, i=0):
+        if self._commands[index] in Command.NO_ARGS:
+            return None
+        elif self._commands[index] in Command.ONE_ARGS:
+            return str(self._values[index][0])
+        elif self._commands[index] in Command.TWO_ARGS:
+            return str(self._values[index][i])
+
     def getCommands(self):
         return self._commands
         
