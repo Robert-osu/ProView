@@ -270,6 +270,11 @@ Command.CHECK_DIAGONAL = {
     (Command.CHECK_RIGHT, Command.CHECK_TOP): Command.CHECK_TOP_RIGHT,
     (Command.CHECK_LEFT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_LEFT,
     (Command.CHECK_RIGHT, Command.CHECK_BOTTOM): Command.CHECK_BOTTOM_RIGHT,
+
+    (Command.CHECK_LEFT, Command.CHECK_RIGHT): Command.CHECK_CENTER,
+    (Command.CHECK_RIGHT, Command.CHECK_LEFT): Command.CHECK_CENTER,
+    (Command.CHECK_TOP, Command.CHECK_BOTTOM): Command.CHECK_CENTER,
+    (Command.CHECK_BOTTOM, Command.CHECK_TOP): Command.CHECK_CENTER,
 }
 Command.E = (Command.START, Command.STOP, Command.RESPAWN_TO)
 Command.R = (Command.ROTATE_LEFT, Command.ROTATE_RIGHT, Command.DIR_RANDOM)

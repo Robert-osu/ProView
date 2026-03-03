@@ -323,7 +323,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         
         if (x <= mouse_x <= x + self.thumb_size and 
             y <= mouse_y <= y + self.thumb_size):
-            print("x: ", x, "y: ", y)
             self.x = x
             self.y = y
             return index

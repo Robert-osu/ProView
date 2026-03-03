@@ -130,9 +130,11 @@ class Programmator:
         if self._commands[index] in Command.NO_ARGS:
             return None
         elif self._commands[index] in Command.ONE_ARGS:
-            return str(self._values[index][0])
+            print(self._values[index])
+            return self._values[index][0]
         elif self._commands[index] in Command.TWO_ARGS:
-            return str(self._values[index][i])
+            print(self._values[index])
+            return self._values[index][i]
 
     def getCommands(self):
         return self._commands
