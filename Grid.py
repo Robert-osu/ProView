@@ -37,7 +37,7 @@ class GridObject(GameObject):
     
     def update_cell_image(self, idx, cmd):
         """Обновляет кеш изображения для указанной ячейки"""
-        if 0 <= idx < len(self.ctx.cmd_list):
+        if 0 <= idx < len(self.ctx.pro._commands):
             # self.ctx.cmd_list[idx] = cmd
             
             # Обновляем кеш
@@ -53,13 +53,16 @@ class GridObject(GameObject):
         font = pygame.font.Font(None, self.ctx.font_size)
         cmd_list = list(Command)
         
-        for idx, cmd in enumerate(self.ctx.cmd_list):
+        for idx, cmd in enumerate(self.ctx.pro._commands):
             print(cmd)
+            if cmd == Command.VAR_EQUAL:
+                print("it is, index:", idx, "len:", len(self.ctx.pro._commands), " == ", len(self.ctx.cmd_list))
             # Создаем поверхность для ячейки
             original = self.ctx.cmd_images[cmd]
             cell = original.copy()  # Создаем копию, чтобы не изменять оригинал
 
-            cmd = self.ctx.pro._commands[idx]
+            if cmd == Command.VAR_EQUAL:
+                print(1)
             if cmd in Command.NO_ARGS:
                 pass
             elif cmd in Command.ONE_ARGS:
@@ -137,7 +140,7 @@ class GridObject(GameObject):
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[99]:
                     x, y = 30, 15
                     cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
@@ -167,27 +170,27 @@ class GridObject(GameObject):
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[121]:
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[122]:
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[123]:
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[124]:
                     x, y = 22, 23
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[108]:
                     x, y = 26, 16
                     cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
@@ -212,23 +215,25 @@ class GridObject(GameObject):
                     x, y = 22, 22
                     cell.blit(*self.render_text(idx, x=x, y=y, color=0))
                     x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
                 elif cmd == cmd_list[129]:
                     x, y = 22, 22
                     cell.blit(*self.render_text(idx, x=x, y=y, color=2))
                     x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
                 elif cmd == cmd_list[130]:
                     x, y = 22, 22
                     cell.blit(*self.render_text(idx, x=x, y=y, color=2))
                     x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
                 else:
                     x, y = 30, 15
                     cell.blit(*self.render_text(idx, x=x, y=y, color=1))
                     x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
             
+            if cmd == Command.VAR_EQUAL:
+                print(2)
         
             # Добавляем рамку
             pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
@@ -258,8 +263,6 @@ class GridObject(GameObject):
             color = color_val2
 
         valueT = self.ctx.pro.getValue(id, i)
-        if valueT == '0':
-            valueT = ''
 
 
 
