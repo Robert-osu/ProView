@@ -17,7 +17,7 @@ class TextInput(GameObject):
         self.color = self.color_inactive
         self.cursor_visible = True
         self.cursor_timer = 0
-        self.font = pygame.font.Font(None, 20)
+        self.font = pygame.font.SysFont('arial', 24)
         self.is_active = False
         self.id_cmd = None
         self.num_cmd = 0
@@ -54,6 +54,25 @@ class TextInput(GameObject):
             # center
             x, y = self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2
             text_rect = glow_surface.get_rect(center=(x, y))
+
+            # === ТЕМНАЯ ОБЛАСТЬ ПОД ТЕКСТОМ ===
+            # Создаем поверхность для темной области
+            text_rect = text_surface.get_rect(center=(x, y))
+            padding = 2  # Отступ от текста
+            bg_rect = pygame.Rect(
+                text_rect.x - padding,
+                text_rect.y - padding,
+                text_rect.width + padding * 2,
+                text_rect.height + padding * 2
+            )
+            
+            # Рисуем полупрозрачный черный прямоугольник
+            bg_surface = pygame.Surface((bg_rect.width, bg_rect.height))
+            bg_surface.set_alpha(180)  # Прозрачность (0-255)
+            bg_surface.fill((0, 0, 0))
+            self.screen.blit(bg_surface, bg_rect)
+
+
             self.screen.blit(glow_surface, text_rect)
             text_rect.centerx = x - 1
             text_rect.centery = y - 1
@@ -122,7 +141,7 @@ class TextInput(GameObject):
         selection_surface.fill((0, 255, 0))
         self.screen.blit(selection_surface, (selection_x, text_y))
 
-    def handle_event(self, event):
+    def handle_event(self, event, type=0):
         if event.type == pygame.MOUSEBUTTONDOWN:
             was_active = self.active
             self.active = self.rect.collidepoint(event.pos)
@@ -190,21 +209,27 @@ class TextInput(GameObject):
                 self.cursor_position = len(self.text)
                 self.text_selected = False
             
-            elif event.key == pygame.K_a and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+            elif event.scancode == 4 and (pygame.key.get_mods() & pygame.KMOD_CTRL):
                 # Ctrl+A - выделить весь текст
                 self.select_all()
             
             else:
                 # Ввод символов
                 if event.unicode and event.unicode.isprintable():
-                    if self.text_selected and self.selection_start != self.selection_end:
+                    print(type)
+                    access = False
+                    if (type == 1 or type == 0) and (event.unicode.isalpha() and event.unicode.isascii()):
+                        access = True
+                    elif (type == 2) and event.unicode.isdigit():
+                        access = True
+                    if access and self.text_selected and self.selection_start != self.selection_end:
                         # Заменяем выделенный текст
                         start = min(self.selection_start, self.selection_end)
                         end = max(self.selection_start, self.selection_end)
                         self.text = self.text[:start] + event.unicode + self.text[end:]
                         self.cursor_position = start + 1
                         self.text_selected = False
-                    elif len(self.text) < self.max_length:
+                    elif access and len(self.text) < self.max_length:
                         # Вставляем символ в позицию курсора
                         self.text = self.text[:self.cursor_position] + event.unicode + self.text[self.cursor_position:]
                         self.cursor_position += 1
@@ -275,7 +300,9 @@ class TextInput(GameObject):
         self.flag_end = False
         self.is_active = True
         self.select_all()
-        self.handle_event(event)
+
+        x, y, type = self.ctx.get_cmd_data(index, n)
+        self.handle_event(event, type)
     
     def off_active(self):
         self.flag_end = False

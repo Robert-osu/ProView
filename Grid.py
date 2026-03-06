@@ -8,6 +8,7 @@ class GridObject(GameObject):
         super().__init__(z_order)
         self.ctx = viewer_context
         self.screen = self.ctx.screen
+        self.conf = self.ctx.config_cmd
         
         # Параметры сетки
         self.cell_size = self.ctx.thumb_size + self.ctx.padding
@@ -39,7 +40,6 @@ class GridObject(GameObject):
         """Обновляет кеш изображения для указанной ячейки"""
         if 0 <= idx < len(self.ctx.pro._commands):
             # self.ctx.cmd_list[idx] = cmd
-            cmd_list = list(Command)
 
             original = self.ctx.cmd_images[cmd]
             cell = original.copy()  # Создаем копию, чтобы не изменять оригинал
@@ -47,172 +47,35 @@ class GridObject(GameObject):
             if cmd in Command.NO_ARGS:
                 pass
             elif cmd in Command.ONE_ARGS:
-                if cmd == cmd_list[112]:
-                    x, y = 35, 42
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[113]:
-                    x, y = 35, 42
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[24]:
-                    x, y = 42, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[25]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[26]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[40]:
-                    x, y = 20, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[97]:
-                    x, y = 34, 44
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[98]:
-                    x, y = 28, 44
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[104]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[105]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[106]:
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[107]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[166]:
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[114]:
-                    x, y = 35, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[115]:
-                    x, y = 35, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[116]:
-                    x, y = 38, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[117]:
-                    x, y = 38, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[137]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[139]:
-                    x, y = 28, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[140]:
-                    x, y = 28, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[181]:
-                    x, y = 30, 35
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[182]:
-                    x, y = 30, 35
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                else:
-                    x, y = 30, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y))
+                x, y, type = self.conf.get_one_args_config(cmd)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=0, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=0, color=0))
+                elif type == 2: # value
+                    pass
+
             elif cmd in Command.TWO_ARGS:
-                if cmd == cmd_list[119]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[99]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[100]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[101]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[102]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[103]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[120]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[121]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[122]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[123]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[124]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[108]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[109]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[110]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[111]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[128]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[129]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=2))
-                    x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-                elif cmd == cmd_list[130]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=2))
-                    x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-                else:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-            
+                is_above = True
+                num = 0 if is_above else 1
+                x, y, type = self.conf.get_two_args_config(cmd, is_above)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=2))
+                elif type == 2: # value
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=1))
+
+                is_above = False
+                num = 0 if is_above else 1
+                x, y, type = self.conf.get_two_args_config(cmd, is_above)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=0))
+                elif type == 2: # value
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=1))
+
             # Добавляем рамку
             pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
             
@@ -226,7 +89,7 @@ class GridObject(GameObject):
         """Создает поверхности для всех ячеек заранее"""
         thumb_size = self.ctx.thumb_size
         padding = self.ctx.padding
-        font = pygame.font.Font(None, self.ctx.font_size)
+        font = pygame.font.SysFont('arial', self.ctx.font_size)
         cmd_list = list(Command)
         
         for idx, cmd in enumerate(self.ctx.pro._commands):
@@ -237,172 +100,35 @@ class GridObject(GameObject):
             if cmd in Command.NO_ARGS:
                 pass
             elif cmd in Command.ONE_ARGS:
-                if cmd == cmd_list[112]:
-                    x, y = 35, 42
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[113]:
-                    x, y = 35, 42
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[24]:
-                    x, y = 42, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[25]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[26]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[40]:
-                    x, y = 20, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[97]:
-                    x, y = 34, 44
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[98]:
-                    x, y = 28, 44
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[104]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[105]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[106]:
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[107]:
-                    x, y = 32, 48
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[166]:
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[114]:
-                    x, y = 35, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[115]:
-                    x, y = 35, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[116]:
-                    x, y = 38, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[117]:
-                    x, y = 38, 40
-                    cell.blit(*self.render_text(idx, x=x, y=y))
-                elif cmd == cmd_list[137]:
-                    x, y = 32, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[139]:
-                    x, y = 28, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[140]:
-                    x, y = 28, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[181]:
-                    x, y = 30, 35
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                elif cmd == cmd_list[182]:
-                    x, y = 30, 35
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=-1))
-                else:
-                    x, y = 30, 33
-                    cell.blit(*self.render_text(idx, x=x, y=y))
+                x, y, type = self.conf.get_one_args_config(cmd)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=0, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=0, color=0))
+                elif type == 2: # value
+                    pass
+
             elif cmd in Command.TWO_ARGS:
-                if cmd == cmd_list[119]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[99]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[100]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[101]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[102]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[103]:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[120]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[121]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[122]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[123]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[124]:
-                    x, y = 22, 23
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 52
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[108]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[109]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[110]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[111]:
-                    x, y = 26, 16
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=2))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                elif cmd == cmd_list[128]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=0))
-                    x, y = 30, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=1))
-                elif cmd == cmd_list[129]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=2))
-                    x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-                elif cmd == cmd_list[130]:
-                    x, y = 22, 22
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=2))
-                    x, y = 38, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-                else:
-                    x, y = 30, 15
-                    cell.blit(*self.render_text(idx, x=x, y=y, color=1))
-                    x, y = 32, 50
-                    cell.blit(*self.render_text(idx, x=x, y=y, i=1, color=0))
-            
+                is_above = True
+                num = 0 if is_above else 1
+                x, y, type = self.conf.get_two_args_config(cmd, is_above)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=2))
+                elif type == 2: # value
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=1))
+
+                is_above = False
+                num = 0 if is_above else 1
+                x, y, type = self.conf.get_two_args_config(cmd, is_above)
+                if type == 0: # label
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=-1))
+                elif type == 1: # variable
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=0))
+                elif type == 2: # value
+                    cell.blit(*self.render_text(idx, x=x, y=y, i=num, color=1))
+
         
             # Добавляем рамку
             pygame.draw.rect(cell, (80, 80, 80), cell.get_rect(), 1)
