@@ -91,13 +91,13 @@ class ChangeCellCommand(KeyCommand):
     def execute(self):
         current_cmd = Command.EMPTY
         id = None
-
         # Определяем какую команду выполнять
         if self.command_group:
             # костыль
-            if self.viewer.hovered.current:
+            if self.viewer.hovered.current != None:
                 id = int(self.viewer.hovered.current)
-            if id and self.viewer.cmd_list[id] in Command.CHECK_ORTO and self.command_group[0] in Command.CHECK_ORTO:
+                print(2, id)
+            if id != None and self.viewer.cmd_list[id] in Command.CHECK_ORTO and self.command_group[0] in Command.CHECK_ORTO:
                 # Комбинирует два ортогональных направления в диагональное
                 dir1 = self.viewer.cmd_list[id]
                 dir2 = self.command_group[0]
@@ -112,23 +112,27 @@ class ChangeCellCommand(KeyCommand):
                         current_cmd = dir2
                 else:
                     current_cmd = self.next(id)
-            elif id and self.viewer.cmd_list[id] in self.command_group:
+            elif id != None and self.viewer.pro._commands[id] in self.command_group:
                 current_cmd = self.next(id)
+                print(3)
             else:
                 self.current_index = 0
                 current_cmd = self.command_group[self.current_index]
+                print(id, id != None, self.viewer.pro._commands[0] in self.command_group, self.viewer.pro._commands[0])
             # Используем команду из группы
             self.inc()
         else:
             # Используем переданную команду
             current_cmd = self.cmd
+            print(5)
         
         # Выполняем действие
         if hasattr(self.viewer, 'change_cell'):
             self.viewer.change_cell(current_cmd)
+            print(6)
 
     def next(self, id):
-        current = self.viewer.cmd_list[id]
+        current = self.viewer.pro._commands[id]
         i = self.command_group.index(current)
         next = (i + 1) % len(self.command_group)  # % для циклического перехода
         return self.command_group[next]

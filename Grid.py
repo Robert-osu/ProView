@@ -13,6 +13,8 @@ class GridObject(GameObject):
         # Параметры сетки
         self.cell_size = self.ctx.thumb_size + self.ctx.padding
         self.cols = self.ctx.cols
+
+        self.page = 0
         
         # Кэш для поверхностей ячеек
         self.cell_surfaces = {}  # {index: surface}
@@ -23,11 +25,9 @@ class GridObject(GameObject):
     def _draw(self):
         if self.ctx.re_grid:
             self.screen.fill((50, 50, 50))
-            # self.screen.fill((255, 250, 250))
             self.draw_grid()
+            self.draw_page_navigation()
             pygame.display.flip()
-            # self.ctx.re_top = True
-            # self.ctx.re_ui = True
             self.ctx.re_grid = False
     
     def _update(self):
@@ -36,6 +36,111 @@ class GridObject(GameObject):
     def _execute(self):
         pass
 
+
+    def draw_page_navigation(self):
+        """Рисует навигацию по страницам вверху экрана"""
+        # Параметры навигации
+        rows_per_page = 12
+        total_pages = 16
+        current_page = self.page + 1
+        
+        # Параметры отображения
+        nav_height = 40
+        nav_y = 10
+        button_width = 50
+        button_height = 30
+        button_spacing = 5
+        start_x = (self.screen.get_width() - (total_pages * (button_width + button_spacing))) // 2
+        
+        # Рисуем фон для навигации
+        nav_bg = pygame.Surface((self.screen.get_width(), nav_height))
+        nav_bg.fill((40, 40, 40))
+        nav_bg.set_alpha(200)
+        self.screen.blit(nav_bg, (0, 0))
+        
+        # Шрифт для номеров страниц
+        font = pygame.font.SysFont('arial', 16, bold=True)
+        
+        # Рисуем кнопки страниц
+        for page in range(1, total_pages + 1):
+            x = start_x + (page - 1) * (button_width + button_spacing)
+            
+            # Определяем цвет кнопки (текущая страница выделяется)
+            if page == current_page:
+                button_color = (100, 150, 255)  # Синий для текущей страницы
+                text_color = (255, 255, 255)
+            else:
+                button_color = (60, 60, 60)  # Серый для остальных
+                text_color = (200, 200, 200)
+            
+            # Рисуем кнопку
+            pygame.draw.rect(self.screen, button_color, 
+                            (x, nav_y, button_width, button_height),
+                            border_radius=5)
+            pygame.draw.rect(self.screen, (100, 100, 100), 
+                            (x, nav_y, button_width, button_height), 2, 
+                            border_radius=5)
+            
+            # Текст номера страницы
+            text = font.render(str(page), True, text_color)
+            text_rect = text.get_rect(center=(x + button_width // 2, 
+                                            nav_y + button_height // 2))
+            self.screen.blit(text, text_rect)
+        
+        # Рисуем дополнительную информацию
+        info_font = pygame.font.SysFont('arial', 14, bold=True)
+        
+        info_text = f"Привет от Majin"
+        text = info_font.render(info_text, True, (255, 228, 196))
+        self.screen.blit(text, (10, nav_y + button_height + 5))
+
+    def handle_page_click(self):
+        """Обрабатывает клик по навигации страниц"""
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        rows_per_page = 12
+        total_pages = 16
+        current_page = self.page + 1
+        
+        # Параметры отображения (должны совпадать с draw_page_navigation)
+        nav_height = 40
+        nav_y = 10
+        button_width = 50
+        button_height = 30
+        button_spacing = 5
+        start_x = (self.screen.get_width() - (total_pages * (button_width + button_spacing))) // 2
+        
+            # Проверяем вертикальную область
+        if not (nav_y <= mouse_y <= nav_y + button_height):
+            return None
+        
+        # Вычисляем начальную позицию
+        total_width = total_pages * (button_width + button_spacing) - button_spacing
+        start_x = (self.screen.get_width() - total_width) // 2
+        
+        # Проверяем горизонтальную область
+        if not (start_x <= mouse_x <= start_x + total_width):
+            return None
+        
+        # Вычисляем страницу
+        relative_x = mouse_x - start_x
+        page_index = relative_x // (button_width + button_spacing)
+        
+        # Проверяем, что клик по кнопке, а не по промежутку
+        button_start = start_x + page_index * (button_width + button_spacing)
+        if mouse_x > button_start + button_width:
+            return None
+        
+        page = page_index + 1
+        if page > total_pages:
+            return None
+        
+        target_row = (page - 1) * rows_per_page
+        if target_row >= len(self.ctx.cmd_list):
+            return None
+        
+        self.page = page_index
+        self.ctx.re_grid = True
+        return None
     
     def update_cell_image(self, idx, cmd):
         """Обновляет кеш изображения для указанной ячейки"""
@@ -254,33 +359,35 @@ class GridObject(GameObject):
  
     def draw_grid(self):
         """Рисует сетку с изображениями"""
-        self.ctx.update_visible_range()
-        
         # Определяем видимые строки
-        first_row = self.ctx.first_visible_row
-        last_row = self.ctx.last_visible_row
+        first_row = self.page * 12
+        last_row = first_row + 12
         
         # Параметры позиционирования
         cell_size = self.cell_size
         padding = self.ctx.padding
         offsetW = self.ctx.offsetW
         offsetH = self.ctx.offsetH
-        scroll_y = self.ctx.scroll_y
         window_height = self.ctx.window_height
         
         # Рисуем номера строк
-        self._draw_line_numbers(first_row, last_row, offsetH, scroll_y, window_height)
+        self._draw_line_numbers(first_row, last_row, offsetH, window_height)
         
         # Рисуем видимые ячейки
         for row in range(first_row, last_row):
+            # Нормализуем row для расчета позиции на экране
+            # Для 1-й страницы: row=0..11, normalized_row=0..11
+            # Для 2-й страницы: row=12..23, normalized_row=0..11
+            normalized_row = row % 12  # или row - first_row
+            
             for col in range(self.cols):
                 idx = row * self.cols + col
-                if idx >= len(self.ctx.cmd_list):
+                if idx >= len(self.ctx.pro._commands):
                     break
                 
-                # Вычисляем позицию
+                # Вычисляем позицию, используя нормализованный номер строки
                 x = padding + col * cell_size + offsetW
-                y = padding + row * cell_size + offsetH - scroll_y
+                y = padding + normalized_row * cell_size + offsetH
                 
                 # Проверяем видимость
                 if y + self.ctx.thumb_size < 0 or y > window_height:
@@ -290,12 +397,10 @@ class GridObject(GameObject):
                 if idx in self.cell_surfaces:
                     self.screen.blit(self.cell_surfaces[idx], (x, y))
         
-        # Рисуем скроллбар
-        # self.ctx.scrollbar.draw(self.ctx.screen)
     
-    def _draw_line_numbers(self, first_row, last_row, offsetH, scroll_y, window_height):
+    def _draw_line_numbers(self, first_row, last_row, offsetH, window_height):
         """Рисует номера строк"""
-        line_font = pygame.font.Font(None, self.ctx.line_font_size)
+        line_font = pygame.font.SysFont('arial', 16, bold=True)
         padding = self.ctx.padding
         thumb_size = self.ctx.thumb_size
         cell_size = self.cell_size
@@ -303,7 +408,8 @@ class GridObject(GameObject):
         line_number_padding = self.ctx.line_number_padding
         
         for row in range(first_row, last_row):
-            y = padding + row * cell_size + offsetH - scroll_y
+            normalized_row = row % 12
+            y = padding + normalized_row * cell_size + offsetH
             
             if y + thumb_size > 0 and y < window_height:
                 line_number_x = padding + line_number_padding
@@ -330,7 +436,7 @@ class GridObject(GameObject):
         """Определяет индекс ячейки по координатам мыши"""
         # Относительные координаты внутри сетки
         rel_x = mouse_x - grid_x - self.ctx.offsetW
-        rel_y = mouse_y - grid_y - self.ctx.offsetH + self.ctx.scroll_y
+        rel_y = mouse_y - grid_y - self.ctx.offsetH
         
         if rel_x < 0 or rel_y < 0:
             return None

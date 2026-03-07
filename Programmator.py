@@ -117,6 +117,9 @@ class Programmator:
             else:
                 return "0"
 
+    def _fixPosNewValue(self):
+        pass
+
     def getCommands(self):
         return self._commands
         
