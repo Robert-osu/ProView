@@ -45,40 +45,16 @@ class Programmator:
         self.addCommand(size - 1, Command.MULTIPLY_VALUE)
         self._modifyData()
 
-        args_1 = list(Command.ONE_ARGS)
-        args_2 = list(Command.TWO_ARGS)
-        args_0 = list(Command.NO_ARGS)
-        list_cmd = list(Command)
-
-        # self.addCommand(1, list_cmd[2])
-        # self.addValue(1, ValueTuple('10', 'a'))
-
-        # self.addCommand(2, Command.SET_VALUE)
-        # self.addValue(2, ValueTuple('A', '1'))
-
-        # self.addCommand(3, list_cmd[99])
-        # self.addValue(3, ValueTuple('B', '21'))
-
-        # self.addCommand(4, list_cmd[98])
-        # self.addValue(4, ValueTuple('B'))
-
-        # self.addCommand(5, list_cmd[97])
-        # self.addValue(5, ValueTuple('A'))
-
-        # self.addCommand(6, list_cmd[120])
-        # self.addValue(6, ValueTuple('C', '5'))
-
-        # # self.addCommand(7, list_cmd[113])
-        # # self.addValue(7, ValueTuple('C', '5'))
-
-        # self.addCommand(8, list_cmd[139])
-        # self.addValue(8, ValueTuple('C', '5'))
-
-        # self.addCommand(9, list_cmd[23])
-        # self.addValue(9, ValueTuple('C', '5'))
-        #self._values[120] = ['1', '1']
+        # args_1 = list(Command.ONE_ARGS)
+        # args_2 = list(Command.TWO_ARGS)
+        # args_0 = list(Command.NO_ARGS)
+        # list_cmd = list(Command)
         
-
+    def _setClearCommands(self):
+        size = 16 * 12 * 16
+        self._commands = [Command.EMPTY] * size
+        self._values = [['0'] for _ in range(size)]
+        self.size = size
 
 
     def copy(self, code: str):
@@ -94,15 +70,17 @@ class Programmator:
         """Парсит данные на составные части."""
         bsize = Programmator.SIZE_BYTES
         
-        self.size = int.from_bytes(mod_data[:bsize], 'little')
+        size = int.from_bytes(mod_data[:bsize], 'little')
+
+        self._setClearCommands()
 
         list_commands = list(Command)
-        self._commands = []
-        for byte in mod_data[bsize:(self.size + bsize)]:
-            self._commands.append(list_commands[int(byte)])
+        for i, byte in enumerate(mod_data[bsize:(size + bsize)]):
+            if i < len(self._commands):
+                self._commands[i] = list_commands[int(byte)]
 
 
-        self._values = self._parseValues(mod_data[self.size + bsize:])
+        self._values = self._parseValues(mod_data[size + bsize:])
 
     def addCommand(self, index, cmd: Command):
         if index >= 0 and index < self.size:
