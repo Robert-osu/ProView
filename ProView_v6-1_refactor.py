@@ -280,8 +280,13 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         
         # Проверяем, не наведена ли мышь на область кнопок меню
         if mouse_y < self.panel_height:
-            return None
-        
+            page = self.grid.get_nav_button_at_position(mouse_x, mouse_y)
+            if page != None and self.grid.pagehover != page:
+                self.grid.pagehover = page
+                self.re_top = True
+        elif self.grid.pagehover != None:
+            self.grid.pagehover = None
+            self.re_top = True
         # Вычисляем возможный ряд и колонку по позиции мыши
         rel_x = mouse_x - self.padding - self.offsetW
         rel_y = mouse_y - self.padding - self.offsetH

@@ -9,6 +9,7 @@ class GridObject(GameObject):
         self.ctx = viewer_context
         self.screen = self.ctx.screen
         self.conf = self.ctx.config_cmd
+        self.pagehover = False
         
         # Параметры сетки
         self.cell_size = self.ctx.thumb_size + self.ctx.padding
@@ -26,9 +27,18 @@ class GridObject(GameObject):
         if self.ctx.re_grid:
             self.screen.fill((50, 50, 50))
             self.draw_grid()
-            self.draw_page_navigation()
+            self.draw_page_navigation(self.pagehover)
             pygame.display.flip()
             self.ctx.re_grid = False
+            self.ctx.re_top = False
+        elif self.ctx.re_top:
+            x, y = 0, 0
+            width, height = self.ctx.window_height, self.ctx.panel_height
+            rect = pygame.Rect(x, y, width, height)
+            self.screen.fill((40, 40, 40), rect)
+            self.draw_page_navigation(self.pagehover)
+            pygame.display.flip()
+            self.ctx.re_top = False
     
     def _update(self):
         pass
@@ -37,12 +47,17 @@ class GridObject(GameObject):
         pass
 
 
-    def draw_page_navigation(self):
+    def draw_page_navigation(self, pagehover=None):
         """Рисует навигацию по страницам вверху экрана"""
         # Параметры навигации
         rows_per_page = 12
         total_pages = 16
         current_page = self.page + 1
+
+        if pagehover != None:
+            ishover = True
+        else:
+            ishover = False
         
         # Параметры отображения
         nav_height = 40
@@ -64,35 +79,80 @@ class GridObject(GameObject):
         # Рисуем кнопки страниц
         for page in range(1, total_pages + 1):
             x = start_x + (page - 1) * (button_width + button_spacing)
+            button_rect = pygame.Rect(x, nav_y, button_width, button_height)
+
+            # Сохраняем область кнопки
+            # self.nav_buttons_rects[page] = button_rect
             
-            # Определяем цвет кнопки (текущая страница выделяется)
+            # Определяем цвета для кнопки
             if page == current_page:
                 button_color = (100, 150, 255)  # Синий для текущей страницы
                 text_color = (255, 255, 255)
+                border_color = (150, 200, 255)
             else:
-                button_color = (60, 60, 60)  # Серый для остальных
+                if ishover and page == pagehover:
+                    button_color = (90, 90, 90)  # Светло-серый при наведении
+                else:
+                    button_color = (60, 60, 60)  # Серый для остальных
                 text_color = (200, 200, 200)
+                border_color = (100, 100, 100)
             
-            # Рисуем кнопку
-            pygame.draw.rect(self.screen, button_color, 
-                            (x, nav_y, button_width, button_height),
-                            border_radius=5)
-            pygame.draw.rect(self.screen, (100, 100, 100), 
-                            (x, nav_y, button_width, button_height), 2, 
-                            border_radius=5)
-            
-            # Текст номера страницы
-            text = font.render(str(page), True, text_color)
-            text_rect = text.get_rect(center=(x + button_width // 2, 
-                                            nav_y + button_height // 2))
-            self.screen.blit(text, text_rect)
+            # Используем функцию для отрисовки кнопки
+            self._draw_nav_button(button_rect, page, button_color, 
+                                text_color, border_color, font, ishover)
         
         # Рисуем дополнительную информацию
         info_font = pygame.font.SysFont('arial', 14, bold=True)
         
         info_text = f"Привет от Majin"
         text = info_font.render(info_text, True, (255, 228, 196))
-        self.screen.blit(text, (10, nav_y + button_height + 5))
+        self.screen.blit(text, (10, self.ctx.panel_height // 2))
+
+    # ПОЛУЧАЕМ КНОПКУ ПОД КУРСОРОМ МАТЕМАТИЧЕСКИ (БЕЗ ЦИКЛА)
+    def get_nav_button_at_position(self, mouse_x, mouse_y):
+        """Определяет номер страницы под курсором математически, без перебора"""
+        # Проверяем, находится ли мышь в области навигации по Y
+        if mouse_y < 10 or mouse_y > 40:  # nav_y = 10, nav_y + button_height = 40
+            return None
+        
+        # Параметры навигации (должны быть доступны)
+        total_pages = 16
+        button_width = 50
+        button_spacing = 5
+        start_x = (self.screen.get_width() - (total_pages * (button_width + button_spacing))) // 2
+        
+        # Вычисляем смещение относительно начала первой кнопки
+        rel_x = mouse_x - start_x
+        
+        # Проверяем, вне области кнопок
+        if rel_x < 0 or rel_x > total_pages * (button_width + button_spacing):
+            return None
+        
+        # Вычисляем номер страницы (1-16)
+        page = rel_x // (button_width + button_spacing) + 1
+        
+        # Проверяем границы
+        if 1 <= page <= total_pages:
+            return page
+        
+        return None
+
+    def _draw_nav_button(self, rect, page_num, button_color, 
+                     text_color, border_color, font, ishover=False):
+        # Добавляем эффект увеличения при наведении
+        draw_rect = rect
+
+        # Рисуем основную кнопку
+        pygame.draw.rect(self.screen, button_color, draw_rect, border_radius=5)
+        
+        # Рисуем границу (более толстую при наведении)
+        border_width = 3 if ishover and self.pagehover == page_num else 2
+        pygame.draw.rect(self.screen, border_color, draw_rect, border_width, border_radius=5)
+        
+        # Рендерим и размещаем текст
+        text = font.render(str(page_num), True, text_color)
+        text_rect = text.get_rect(center=draw_rect.center)
+        self.screen.blit(text, text_rect)
 
     def handle_page_click(self):
         """Обрабатывает клик по навигации страниц"""
