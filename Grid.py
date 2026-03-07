@@ -290,7 +290,7 @@ class GridObject(GameObject):
                     self.screen.blit(self.cell_surfaces[idx], (x, y))
         
         # Рисуем скроллбар
-        self.ctx.scrollbar.draw(self.ctx.screen)
+        # self.ctx.scrollbar.draw(self.ctx.screen)
     
     def _draw_line_numbers(self, first_row, last_row, offsetH, scroll_y, window_height):
         """Рисует номера строк"""

@@ -111,21 +111,21 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
                     
                     self.handle_text_input(event)
                 
-                elif event.button in (4, 5):  # Колесико мыши
-                    old_scroll = self.scroll_y
-                    if event.button == 4:
-                        self.scroll_y = max(0, self.scroll_y - 30)
-                    else:
-                        self.scroll_y = min(self.max_scroll, self.scroll_y + 30)
-                    if old_scroll != self.scroll_y:
-                        self.re_grid = True
-                        print(f"[DEBUG] Скролл изменен: {self.scroll_y}")
+                # elif event.button in (4, 5):  # Колесико мыши
+                #     old_scroll = self.scroll_y
+                #     if event.button == 4:
+                #         self.scroll_y = max(0, self.scroll_y - 30)
+                #     else:
+                #         self.scroll_y = min(self.max_scroll, self.scroll_y + 30)
+                #     if old_scroll != self.scroll_y:
+                #         self.re_grid = True
+                #         print(f"[DEBUG] Скролл изменен: {self.scroll_y}")
             
             # Обработка событий scrollbar
-            if hasattr(self, 'scrollbar') and self.scrollbar.handle_event(event):
-                self.scroll_y = self.scrollbar.scroll_y
-                self.re_grid = True
-                print(f"[DEBUG] Скроллбар обновлен: {self.scroll_y}")
+            # if hasattr(self, 'scrollbar') and self.scrollbar.handle_event(event):
+            #     self.scroll_y = self.scrollbar.scroll_y
+            #     self.re_grid = True
+            #     print(f"[DEBUG] Скроллбар обновлен: {self.scroll_y}")
             
             # Обработка событий окна настроек
             if self.ui.key_bind_window:
@@ -143,10 +143,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.ui.ui_manager.update(time_delta)
         
         # Синхронизация скролла
-        if self.scroll_y != self.scrollbar.scroll_y:
-            self.scrollbar.scroll_y = self.scroll_y
-            self.scrollbar.update_handle()
-            self.re_grid = True
+        # if self.scroll_y != self.scrollbar.scroll_y:
+        #     self.scrollbar.scroll_y = self.scroll_y
+        #     self.scrollbar.update_handle()
+        #     self.re_grid = True
         
         return True  # Продолжаем работу
 
@@ -209,6 +209,8 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     def close_input(self):
         id = self.text.id_cmd
         cmd = self.cmd_list[id]
+        num = self.text.num_cmd
+        self.pro._values[id][num] = self.text.text
         self.text.off_active()
         self.grid._create_cell(id, cmd, 2)
             
@@ -308,20 +310,20 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def _init_final_calculations(self):
         """Финальные вычисления и создание поверхностей"""
-        
+        pass
         # Инициализация скроллбара
-        total_content_height = self.rows * (self.thumb_size + self.padding) + self.padding
-        self.max_scroll = max(0, total_content_height - (self.window_height - self.offsetH))
+        # total_content_height = self.rows * (self.thumb_size + self.padding) + self.padding
+        # self.max_scroll = max(0, total_content_height - (self.window_height - self.offsetH))
         
-        self.scrollbar = Scrollbar(
-            x=self.window_width - (20 * self.k_size),
-            y=self.offsetH,
-            width=(15 * self.k_size),
-            height=self.window_height - self.offsetH,
-            content_height=total_content_height,
-            view_height=self.window_height - self.offsetH
-        )
-        print(f"[DEBUG] Скроллбар создан: max_scroll={self.max_scroll}")
+        # self.scrollbar = Scrollbar(
+        #     x=self.window_width - (20 * self.k_size),
+        #     y=self.offsetH,
+        #     width=(15 * self.k_size),
+        #     height=self.window_height - self.offsetH,
+        #     content_height=total_content_height,
+        #     view_height=self.window_height - self.offsetH
+        # )
+        # print(f"[DEBUG] Скроллбар создан: max_scroll={self.max_scroll}")
 
     def _init_manager(self):
         """Создание менеджера и добавление объектов"""
@@ -475,18 +477,18 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             print(f"[DEBUG] Количество строк изменилось: {self.rows}")
             
             # Пересчитываем максимальный скролл
-            total_content_height = self.rows * (self.thumb_size + self.padding) + self.padding
-            self.max_scroll = max(0, total_content_height - (self.window_height - self.offsetH))
+            # total_content_height = self.rows * (self.thumb_size + self.padding) + self.padding
+            # self.max_scroll = max(0, total_content_height - (self.window_height - self.offsetH))
             
             # Корректируем текущий скролл, если он вышел за пределы
-            self.scroll_y = min(self.scroll_y, self.max_scroll)
+            # self.scroll_y = min(self.scroll_y, self.max_scroll)
             
             # Обновляем скроллбар
-            if hasattr(self, 'scrollbar'):
-                self.scrollbar.content_height = total_content_height
-                self.scrollbar.view_height = self.window_height - self.offsetH
-                self.scrollbar.scroll_y = self.scroll_y
-                self.scrollbar.update_handle()
+            # if hasattr(self, 'scrollbar'):
+            #     self.scrollbar.content_height = total_content_height
+            #     self.scrollbar.view_height = self.window_height - self.offsetH
+            #     self.scrollbar.scroll_y = self.scroll_y
+            #     self.scrollbar.update_handle()
         
         
         # Отмечаем необходимость перерисовки
@@ -496,10 +498,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def _create_commands(self):
         """Создание всех команд"""
-        self.scroll_up_cmd = ScrollUpCommand(self)
-        self.scroll_down_cmd = ScrollDownCommand(self)
-        self.select_cmd = SelectCommand(self)
-        self.open_settings_cmd = OpenSettingsCommand(self)
+        # self.scroll_up_cmd = ScrollUpCommand(self)
+        # self.scroll_down_cmd = ScrollDownCommand(self)
+        # self.select_cmd = SelectCommand(self)
+        # self.open_settings_cmd = OpenSettingsCommand(self)
         self.copy_clipboard_cmd = CopyToClipboardCommand(self)
         self.paste_clipboard_cmd = PasteFromClipboardCommand(self)
         # ввод команд программатора
@@ -543,10 +545,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         """Настройка привязки клавиш к командам через фасад"""
         
         # Привязка обычных клавиш
-        self.key_facade.bind_key(pygame.K_UP, self.scroll_up_cmd)
-        self.key_facade.bind_key(pygame.K_DOWN, self.scroll_down_cmd)
-        self.key_facade.bind_key(pygame.K_SPACE, self.select_cmd)
-        self.key_facade.bind_key(pygame.K_ESCAPE, self.open_settings_cmd)
+        # self.key_facade.bind_key(pygame.K_UP, self.scroll_up_cmd)
+        # self.key_facade.bind_key(pygame.K_DOWN, self.scroll_down_cmd)
+        # self.key_facade.bind_key(pygame.K_SPACE, self.select_cmd)
+        # self.key_facade.bind_key(pygame.K_ESCAPE, self.open_settings_cmd)
         
         # Привязка комбинаций с модификаторами
         self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
@@ -595,7 +597,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
 if __name__ == "__main__":
     
-    window_width, window_height = 1250, 900
+    window_width, window_height = 1250, 910
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)

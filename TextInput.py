@@ -151,8 +151,7 @@ class TextInput(GameObject):
             if event.key == pygame.K_ESCAPE:
                 self.flag_end = True
             elif event.key == pygame.K_RETURN:
-                self.ctx.pro._values[self.id_cmd][self.num_cmd] = self.text
-                self.ctx.re_grid = True
+                
                 print(f"Введенный текст: {self.text}")
                 self.text_selected = False
                 self.flag_end = True
