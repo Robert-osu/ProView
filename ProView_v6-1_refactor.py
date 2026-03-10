@@ -1,5 +1,7 @@
 import pygame
 import pygame_gui
+import asyncio
+import threading
 
 from Command import Command
 from Programmator import Programmator
@@ -12,6 +14,7 @@ from Grid import GridObject
 from utils import ValueTracker, GetImage
 from TextInput import TextInput
 from cmd_with_img_config import CommandConfig
+from test_async_sound import AsyncVisualProgrammerAudio
 
 
 
@@ -33,6 +36,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.thumb_size = int(64 * self.k_size)
 
         self.pro = pro
+        self.on_audio = False
         self.cmd_list = pro._commands # commands
         self.cols = 16
         self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
@@ -282,6 +286,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         if mouse_y < self.panel_height:
             page = self.grid.get_nav_button_at_position(mouse_x, mouse_y)
             if page != None and self.grid.pagehover != page:
+                self.on_audio = True
                 self.grid.pagehover = page
                 self.re_top = True
         elif self.grid.pagehover != None:
@@ -510,13 +515,27 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
         self.key_facade.bind_scan_code(42, pygame.KMOD_NONE, self.change_cell_backspace_cmd)
         
+
+def run_audio_processing(audio):
+    """Функция для запуска в отдельном потоке"""
+    # Создаем новый цикл событий для потока
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    # Запускаем асинхронную функцию в этом потоке
+    loop.run_until_complete(audio.start_processing())
         
-
-
-
-if __name__ == "__main__":
-    
+async def main():
     window_width, window_height = 1250, 910
+
+    audio = AsyncVisualProgrammerAudio()
+
+    # Запускаем audio в отдельном потоке
+    audio_thread = threading.Thread(
+        target=run_audio_processing, 
+        args=(audio,),
+        daemon=True  # Поток завершится при выходе из main
+    )
+    audio_thread.start()
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
@@ -537,10 +556,28 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()    
 
     
+
+    
     while running:
         # Запускаем менеджер и получаем сигнал о продолжении
         result = managerGO.run()
+
+        if pro_view.on_audio:
+            await audio.on_ui_hover("button")
+            pro_view.on_audio = False
             
-        clock.tick(30)
+        # Асинхронная "задержка" не блокирует цикл
+        await asyncio.sleep(1/30)
+        # clock.tick(30)
+
+    await audio.stop_processing()
 
     pygame.quit()
+
+
+if __name__ == "__main__":
+    
+    
+
+    # Запуск асинхронного цикла
+    asyncio.run(main())
