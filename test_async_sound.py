@@ -1,8 +1,128 @@
 import pygame
 import numpy as np
 import asyncio
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Union
 import time
+from enum import Enum, auto
+from dataclasses import dataclass
+
+# Enum для всех звуков
+class SoundEffect(Enum):
+    # Изменение значений
+    INCREMENT = "increment"
+    DECREMENT = "decrement"
+    VALUE_CHANGE = "value_change"
+    
+    # Переключение операторов/режимов
+    OPERATOR_SWITCH = "operator_switch"
+    MODE_CHANGE = "mode_change"
+    
+    # Подтверждение/успех
+    SUCCESS = "success"
+    CONFIRM = "confirm"
+    
+    # Ошибка/предупреждение
+    ERROR = "error"
+    WARNING = "warning"
+    
+    # Соединение/разъединение
+    CONNECT = "connect"
+    DISCONNECT = "disconnect"
+    
+    # Загрузка/прогресс
+    LOAD_START = "load_start"
+    LOAD_STEP = "load_step"
+    LOAD_COMPLETE = "load_complete"
+    
+    # Специальные эффекты
+    GLITCH = "glitch"
+    POWER_UP = "power_up"
+    POWER_DOWN = "power_down"
+    TELEPORT = "teleport"
+    
+    # UI звуки
+    HOVER = "hover"
+    SELECT = "select"
+    DRAG = "drag"
+    DROP = "drop"
+    
+    # Пиксельные/ретро звуки
+    PIXEL_JUMP = "pixel_jump"
+    PIXEL_LAND = "pixel_land"
+    PIXEL_COLLECT = "pixel_collect"
+    
+    # Цифры
+    DIGIT_0 = "digit_0"
+    DIGIT_1 = "digit_1"
+    DIGIT_2 = "digit_2"
+    DIGIT_3 = "digit_3"
+    DIGIT_4 = "digit_4"
+    DIGIT_5 = "digit_5"
+    DIGIT_6 = "digit_6"
+    DIGIT_7 = "digit_7"
+    DIGIT_8 = "digit_8"
+    DIGIT_9 = "digit_9"
+    
+    # Системные
+    BEEP = "beep"
+    CLICK = "click"
+    
+    def __str__(self):
+        return self.value
+    
+    @classmethod
+    def from_string(cls, name: str) -> Optional['SoundEffect']:
+        """Получить SoundEffect из строки"""
+        try:
+            return cls(name)
+        except ValueError:
+            return None
+    
+    @classmethod
+    def get_digit(cls, digit: int) -> Optional['SoundEffect']:
+        """Получить звук для цифры"""
+        if 0 <= digit <= 9:
+            return cls(f"digit_{digit}")
+        return None
+
+
+@dataclass
+class SoundConfig:
+    """Конфигурация звука"""
+    sound: SoundEffect
+    cooldown: float = 0
+    volume: float = 1.0
+    fade_in: float = 0
+    fade_out: float = 0
+    delay: float = 0
+
+
+class SoundSequence:
+    """Последовательность звуков"""
+    def __init__(self, sounds: List[Union[SoundEffect, SoundConfig]], loop: bool = False):
+        self.sounds = sounds
+        self.loop = loop
+        self.current_index = 0
+    
+    def next(self) -> Optional[Union[SoundEffect, SoundConfig]]:
+        """Получить следующий звук в последовательности"""
+        if not self.sounds:
+            return None
+        
+        if self.current_index >= len(self.sounds):
+            if self.loop:
+                self.current_index = 0
+            else:
+                return None
+        
+        sound = self.sounds[self.current_index]
+        self.current_index += 1
+        return sound
+    
+    def reset(self):
+        """Сбросить индекс последовательности"""
+        self.current_index = 0
+
 
 class AsyncProgrammerSounds:
     def __init__(self):
@@ -10,14 +130,24 @@ class AsyncProgrammerSounds:
         pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
         
         # Словарь для хранения созданных звуков
-        self.sounds: Dict[str, any] = {}
+        self.sounds: Dict[SoundEffect, Union[pygame.mixer.Sound, List[pygame.mixer.Sound]]] = {}
         
         # Очередь воспроизведения
         self.play_queue = asyncio.Queue()
         self.is_playing = False
         
         # Кэш для ограничения частоты звуков
-        self.last_played: Dict[str, float] = {}
+        self.last_played: Dict[SoundEffect, float] = {}
+        
+        # Настройки по умолчанию для разных звуков
+        self.default_cooldowns: Dict[SoundEffect, float] = {
+            SoundEffect.HOVER: 0.1,
+            SoundEffect.DRAG: 0.05,
+            SoundEffect.LOAD_STEP: 0.1,
+            SoundEffect.INCREMENT: 0.02,
+            SoundEffect.DECREMENT: 0.02,
+            SoundEffect.VALUE_CHANGE: 0.03,
+        }
         
         # Создаем все звуки при инициализации
         self.create_all_sounds()
@@ -131,119 +261,185 @@ class AsyncProgrammerSounds:
         
         # Звуки для разных операций
         self.sounds = {
-            # Изменение значений (короткие звуки разной высоты)
-            'increment': self.create_sine_wave(523.25, 0.05, 0.2),  # До
-            'decrement': self.create_sine_wave(392.00, 0.05, 0.2),  # Соль
-            'value_change': self.create_sine_wave(440.00, 0.03, 0.15),  # Ля
+            # Изменение значений
+            SoundEffect.INCREMENT: self.create_sine_wave(523.25, 0.05, 0.2),  # До
+            SoundEffect.DECREMENT: self.create_sine_wave(392.00, 0.05, 0.2),  # Соль
+            SoundEffect.VALUE_CHANGE: self.create_sine_wave(440.00, 0.03, 0.15),  # Ля
             
             # Переключение операторов/режимов
-            'operator_switch': self.create_square_wave(660, 0.08, 0.25),
-            'mode_change': self.create_sawtooth_wave(330, 0.1, 0.2),
+            SoundEffect.OPERATOR_SWITCH: self.create_square_wave(660, 0.08, 0.25),
+            SoundEffect.MODE_CHANGE: self.create_sawtooth_wave(330, 0.1, 0.2),
             
             # Подтверждение/успех
-            'success': self.create_sine_wave(523.25, 0.15, 0.3),  # До
-            'confirm': [self.create_sine_wave(392, 0.1, 0.2),  # Соль
-                       self.create_sine_wave(523.25, 0.1, 0.2)],  # До
+            SoundEffect.SUCCESS: self.create_sine_wave(523.25, 0.15, 0.3),  # До
+            SoundEffect.CONFIRM: [self.create_sine_wave(392, 0.1, 0.2),  # Соль
+                                 self.create_sine_wave(523.25, 0.1, 0.2)],  # До
             
             # Ошибка/предупреждение
-            'error': self.create_noise(0.15, 0.25),
-            'warning': self.create_square_wave(220, 0.2, 0.3),
+            SoundEffect.ERROR: self.create_noise(0.15, 0.25),
+            SoundEffect.WARNING: self.create_square_wave(220, 0.2, 0.3),
             
             # Соединение/разъединение
-            'connect': self.create_sine_wave(659.25, 0.12, 0.25),  # Ми
-            'disconnect': self.create_sawtooth_wave(329.63, 0.12, 0.2),  # Ми ниже
+            SoundEffect.CONNECT: self.create_sine_wave(659.25, 0.12, 0.25),  # Ми
+            SoundEffect.DISCONNECT: self.create_sawtooth_wave(329.63, 0.12, 0.2),  # Ми ниже
             
             # Загрузка/прогресс
-            'load_start': self.create_sine_wave(440, 0.2, 0.2),
-            'load_step': self.create_click(0.15),
-            'load_complete': self.create_sine_wave(880, 0.3, 0.3),
+            SoundEffect.LOAD_START: self.create_sine_wave(440, 0.2, 0.2),
+            SoundEffect.LOAD_STEP: self.create_click(0.15),
+            SoundEffect.LOAD_COMPLETE: self.create_sine_wave(880, 0.3, 0.3),
             
             # Специальные эффекты
-            'glitch': self.create_noise(0.1, 0.15),
-            'power_up': self.create_sawtooth_wave(200, 0.3, 0.2),
-            'power_down': self.create_sawtooth_wave(100, 0.3, 0.15),
-            'teleport': self.create_square_wave(440, 0.2, 0.2),
+            SoundEffect.GLITCH: self.create_noise(0.1, 0.15),
+            SoundEffect.POWER_UP: self.create_sawtooth_wave(200, 0.3, 0.2),
+            SoundEffect.POWER_DOWN: self.create_sawtooth_wave(100, 0.3, 0.15),
+            SoundEffect.TELEPORT: self.create_square_wave(440, 0.2, 0.2),
             
             # UI звуки
-            'hover': self.create_sine_wave(880, 0.02, 0.1),
-            'select': self.create_square_wave(440, 0.06, 0.2),
-            'drag': self.create_sawtooth_wave(220, 0.05, 0.1),
-            'drop': self.create_sine_wave(330, 0.1, 0.25),
+            SoundEffect.HOVER: self.create_sine_wave(880, 0.02, 0.1),
+            SoundEffect.SELECT: self.create_square_wave(440, 0.06, 0.2),
+            SoundEffect.DRAG: self.create_sawtooth_wave(220, 0.05, 0.1),
+            SoundEffect.DROP: self.create_sine_wave(330, 0.1, 0.25),
             
             # Пиксельные/ретро звуки
-            'pixel_jump': self.create_square_wave(330, 0.08, 0.2),
-            'pixel_land': self.create_square_wave(220, 0.1, 0.15),
-            'pixel_collect': self.create_sawtooth_wave(880, 0.05, 0.2),
+            SoundEffect.PIXEL_JUMP: self.create_square_wave(330, 0.08, 0.2),
+            SoundEffect.PIXEL_LAND: self.create_square_wave(220, 0.1, 0.15),
+            SoundEffect.PIXEL_COLLECT: self.create_sawtooth_wave(880, 0.05, 0.2),
+            
+            # Дополнительные звуки
+            SoundEffect.BEEP: self.create_beep(),
+            SoundEffect.CLICK: self.create_click(),
         }
         
-        # Добавляем звуки для числовых изменений (для счетчиков)
+        # Добавляем звуки для цифр
         for i in range(10):
             freq = 440 + i * 50
-            self.sounds[f'digit_{i}'] = self.create_sine_wave(freq, 0.03, 0.15)
+            self.sounds[SoundEffect(f"digit_{i}")] = self.create_sine_wave(freq, 0.03, 0.15)
     
-    async def play_async(self, sound_name: str, cooldown: float = 0) -> bool:
-        """Асинхронно воспроизводит звук по имени с возможным кулдауном"""
+    def get_sound(self, sound: Union[SoundEffect, str]) -> Optional[Union[pygame.mixer.Sound, List[pygame.mixer.Sound]]]:
+        """Получить звук по SoundEffect или строке"""
+        if isinstance(sound, str):
+            sound_effect = SoundEffect.from_string(sound)
+            if sound_effect is None:
+                return None
+            return self.sounds.get(sound_effect)
+        return self.sounds.get(sound)
+    
+    def get_cooldown(self, sound: SoundEffect) -> float:
+        """Получить кулдаун для звука"""
+        return self.default_cooldowns.get(sound, 0)
+    
+    async def play_async(self, 
+                        sound: Union[SoundEffect, str, SoundConfig], 
+                        cooldown: Optional[float] = None) -> bool:
+        """Асинхронно воспроизводит звук"""
         current_time = time.time()
         
+        # Обработка разных типов входных данных
+        if isinstance(sound, SoundConfig):
+            sound_effect = sound.sound
+            effective_cooldown = cooldown if cooldown is not None else sound.cooldown
+            volume = sound.volume
+            fade_in = sound.fade_in
+            fade_out = sound.fade_out
+        elif isinstance(sound, SoundEffect):
+            sound_effect = sound
+            effective_cooldown = cooldown if cooldown is not None else self.get_cooldown(sound_effect)
+            volume = 1.0
+            fade_in = 0
+            fade_out = 0
+        else:  # str
+            sound_effect = SoundEffect.from_string(sound)
+            if sound_effect is None:
+                return False
+            effective_cooldown = cooldown if cooldown is not None else self.get_cooldown(sound_effect)
+            volume = 1.0
+            fade_in = 0
+            fade_out = 0
+        
         # Проверяем кулдаун
-        if cooldown > 0:
-            last_time = self.last_played.get(sound_name, 0)
-            if current_time - last_time < cooldown:
+        if effective_cooldown > 0:
+            last_time = self.last_played.get(sound_effect, 0)
+            if current_time - last_time < effective_cooldown:
                 return False
         
-        sound = self.sounds.get(sound_name)
-        if sound:
-            if isinstance(sound, list):
+        sound_data = self.sounds.get(sound_effect)
+        if sound_data:
+            if isinstance(sound_data, list):
                 # Последовательное воспроизведение нескольких звуков
-                for s in sound:
+                for s in sound_data:
+                    if volume != 1.0:
+                        s.set_volume(volume)
                     s.play()
-                    await asyncio.sleep(0.05)  # 50ms между звуками
+                    await asyncio.sleep(0.05)
             else:
-                sound.play()
+                if volume != 1.0:
+                    sound_data.set_volume(volume)
+                
+                if fade_in > 0 or fade_out > 0:
+                    await self._play_with_fade_impl(sound_data, fade_in, fade_out)
+                else:
+                    sound_data.play()
             
-            self.last_played[sound_name] = current_time
+            self.last_played[sound_effect] = current_time
             return True
         return False
     
-    async def play_sequence_async(self, sound_names: List[str], delay: float = 0.05):
-        """Асинхронно воспроизводит последовательность звуков"""
-        for name in sound_names:
-            await self.play_async(name)
-            await asyncio.sleep(delay)
-    
-    async def play_with_fade(self, sound_name: str, fade_in: float = 0, fade_out: float = 0):
-        """Воспроизводит звук с затуханием"""
-        sound = self.sounds.get(sound_name)
-        if sound:
-            if isinstance(sound, list):
-                sound = sound[0]
+    async def _play_with_fade_impl(self, sound: pygame.mixer.Sound, fade_in: float, fade_out: float):
+        """Реализация воспроизведения с затуханием"""
+        channel = sound.play()
+        if channel:
+            if fade_in > 0:
+                channel.set_volume(0)
+                steps = 10
+                for i in range(steps + 1):
+                    channel.set_volume(i / steps)
+                    await asyncio.sleep(fade_in / steps)
             
-            channel = sound.play()
-            if channel and (fade_in > 0 or fade_out > 0):
-                if fade_in > 0:
-                    channel.set_volume(0)
-                    # Плавное увеличение громкости
-                    steps = 10
-                    for i in range(steps + 1):
-                        channel.set_volume(i / steps)
-                        await asyncio.sleep(fade_in / steps)
-                
-                if fade_out > 0:
-                    await asyncio.sleep(sound.get_length() - fade_out)
-                    # Плавное уменьшение громкости
-                    steps = 10
-                    for i in range(steps, -1, -1):
-                        channel.set_volume(i / steps)
-                        await asyncio.sleep(fade_out / steps)
+            if fade_out > 0:
+                await asyncio.sleep(sound.get_length() - fade_out)
+                steps = 10
+                for i in range(steps, -1, -1):
+                    channel.set_volume(i / steps)
+                    await asyncio.sleep(fade_out / steps)
     
-    async def play_loop_async(self, sound_name: str, times: int = -1, interval: float = 0):
-        """Асинхронно воспроизводит звук по кругу"""
-        count = 0
-        while times == -1 or count < times:
-            await self.play_async(sound_name)
-            count += 1
-            if interval > 0:
-                await asyncio.sleep(interval)
+    async def play_sequence_async(self, 
+                                 sounds: List[Union[SoundEffect, str, SoundConfig]], 
+                                 default_delay: float = 0.05):
+        """Асинхронно воспроизводит последовательность звуков"""
+        for sound in sounds:
+            if isinstance(sound, SoundConfig):
+                await self.play_async(sound)
+                await asyncio.sleep(sound.delay if sound.delay > 0 else default_delay)
+            else:
+                await self.play_async(sound)
+                await asyncio.sleep(default_delay)
+    
+    async def play_sequence_obj_async(self, sequence: SoundSequence, default_delay: float = 0.05):
+        """Воспроизводит объект SoundSequence"""
+        while True:
+            sound = sequence.next()
+            if sound is None:
+                break
+            
+            if isinstance(sound, SoundConfig):
+                await self.play_async(sound)
+                await asyncio.sleep(sound.delay if sound.delay > 0 else default_delay)
+            else:
+                await self.play_async(sound)
+                await asyncio.sleep(default_delay)
+            
+            if sequence.loop:
+                await asyncio.sleep(0.1)  # Небольшая пауза между повторами
+    
+    async def play_with_config_async(self, config: SoundConfig):
+        """Воспроизводит звук с полной конфигурацией"""
+        await self.play_async(config)
+    
+    async def play_for_digit_async(self, digit: int, **kwargs):
+        """Воспроизводит звук для конкретной цифры"""
+        sound = SoundEffect.get_digit(digit)
+        if sound:
+            await self.play_async(sound, **kwargs)
     
     async def stop_all(self):
         """Останавливает все звуки"""
@@ -254,47 +450,97 @@ class AsyncProgrammerSounds:
         print("Демонстрация звуков программатора...")
         
         categories = {
-            'Изменение значений': ['increment', 'decrement', 'value_change'],
-            'Операторы': ['operator_switch', 'mode_change'],
-            'Успех/Ошибка': ['success', 'confirm', 'error', 'warning'],
-            'Соединения': ['connect', 'disconnect'],
-            'Загрузка': ['load_start', 'load_step', 'load_complete'],
-            'Эффекты': ['glitch', 'power_up', 'power_down', 'teleport'],
-            'UI': ['hover', 'select', 'drag', 'drop'],
-            'Ретро': ['pixel_jump', 'pixel_land', 'pixel_collect'],
-            'Цифры': [f'digit_{i}' for i in range(10)]
+            'Изменение значений': [
+                SoundEffect.INCREMENT, 
+                SoundEffect.DECREMENT, 
+                SoundEffect.VALUE_CHANGE
+            ],
+            'Операторы': [
+                SoundEffect.OPERATOR_SWITCH, 
+                SoundEffect.MODE_CHANGE
+            ],
+            'Успех/Ошибка': [
+                SoundEffect.SUCCESS, 
+                SoundEffect.CONFIRM, 
+                SoundEffect.ERROR, 
+                SoundEffect.WARNING
+            ],
+            'Соединения': [
+                SoundEffect.CONNECT, 
+                SoundEffect.DISCONNECT
+            ],
+            'Загрузка': [
+                SoundEffect.LOAD_START, 
+                SoundEffect.LOAD_STEP, 
+                SoundEffect.LOAD_COMPLETE
+            ],
+            'Эффекты': [
+                SoundEffect.GLITCH, 
+                SoundEffect.POWER_UP, 
+                SoundEffect.POWER_DOWN, 
+                SoundEffect.TELEPORT
+            ],
+            'UI': [
+                SoundEffect.HOVER, 
+                SoundEffect.SELECT, 
+                SoundEffect.DRAG, 
+                SoundEffect.DROP
+            ],
+            'Ретро': [
+                SoundEffect.PIXEL_JUMP, 
+                SoundEffect.PIXEL_LAND, 
+                SoundEffect.PIXEL_COLLECT
+            ],
+            'Цифры': [SoundEffect(f"digit_{i}") for i in range(10)],
+            'Системные': [
+                SoundEffect.BEEP,
+                SoundEffect.CLICK
+            ]
         }
         
         for category, sound_list in categories.items():
             print(f"\n=== {category} ===")
-            for sound_name in sound_list:
-                print(f"▶ {sound_name}")
-                await self.play_async(sound_name)
+            for sound_effect in sound_list:
+                print(f"▶ {sound_effect.value}")
+                await self.play_async(sound_effect)
                 await asyncio.sleep(0.3)
 
-# Асинхронный класс для интеграции с визуальным программатором
+
+# Улучшенная версия VisualProgrammerAudio с Enum
 class AsyncVisualProgrammerAudio:
     def __init__(self):
         self.sounds = AsyncProgrammerSounds()
-        self.last_played: Dict[str, float] = {}
+        self.last_played: Dict[SoundEffect, float] = {}
         
         # Очередь событий
-        self.event_queue = asyncio.Queue()
         self.processing_task: Optional[asyncio.Task] = None
         
-        # Настройки кулдаунов для разных типов звуков (в секундах)
-        self.cooldowns = {
-            'hover': 0.1,
-            'drag': 0.05,
-            'load_step': 0.1,
-            'increment': 0.02,
-            'decrement': 0.02,
+        # Предопределенные последовательности
+        self.sequences = {
+            'compile_success': SoundSequence([
+                SoundEffect.LOAD_COMPLETE,
+                SoundConfig(SoundEffect.SUCCESS, delay=0.1)
+            ]),
+            'compile_error': SoundSequence([
+                SoundEffect.ERROR,
+                SoundConfig(SoundEffect.WARNING, delay=0.1)
+            ]),
+            'connection_made': SoundSequence([
+                SoundEffect.CONNECT,
+                SoundConfig(SoundEffect.SUCCESS, delay=0.05)
+            ]),
+            'power_on': SoundSequence([
+                SoundEffect.POWER_UP,
+                SoundEffect.CLICK,
+                SoundEffect.BEEP
+            ]),
         }
     
     async def start_processing(self):
         """Запускает обработку очереди событий"""
-        if not self.processing_task or self.processing_task.done():
-            self.processing_task = asyncio.create_task(self._process_event_queue())
+        # if not self.processing_task or self.processing_task.done():
+        #     self.processing_task = asyncio.create_task(self._process_event_queue())
+        pass
     
     async def stop_processing(self):
         """Останавливает обработку очереди событий"""
@@ -310,12 +556,18 @@ class AsyncVisualProgrammerAudio:
         while True:
             try:
                 event_data = await self.event_queue.get()
-                sound_name = event_data.get('sound')
-                cooldown = self.cooldowns.get(sound_name, 0)
                 
-                await self.sounds.play_async(sound_name, cooldown)
+                if 'sound' in event_data:
+                    sound = event_data['sound']
+                    cooldown = event_data.get('cooldown')
+                    await self.sounds.play_async(sound, cooldown)
                 
-                # Дополнительная задержка для последовательности
+                elif 'sequence' in event_data:
+                    sequence_name = event_data['sequence']
+                    if sequence_name in self.sequences:
+                        await self.sounds.play_sequence_obj_async(self.sequences[sequence_name])
+                
+                # Дополнительная задержка
                 if 'delay' in event_data:
                     await asyncio.sleep(event_data['delay'])
                 
@@ -325,86 +577,99 @@ class AsyncVisualProgrammerAudio:
             except Exception as e:
                 print(f"Ошибка обработки звука: {e}")
     
-    async def queue_sound(self, sound_name: str, delay: float = 0):
-        """Добавляет звук в очередь"""
-        await self.event_queue.put({'sound': sound_name, 'delay': delay})
+    async def queue_sound(self, sound: Union[SoundEffect, str, SoundConfig], delay: float = 0):
+        """Воспроизводит звук сразу"""
+        await self.sounds.play_async(sound)
+        if delay > 0:
+            await asyncio.sleep(delay)
+    
+    async def queue_sequence(self, sequence_name: str, delay: float = 0):
+        """Воспроизводит последовательность сразу"""
+        if sequence_name in self.sequences:
+            await self.sounds.play_sequence_obj_async(self.sequences[sequence_name])
+        if delay > 0:
+            await asyncio.sleep(delay)
     
     async def on_operator_change(self, operator_id: str, old_value: float, new_value: float):
         """Вызывается при изменении оператора"""
         if new_value > old_value:
-            await self.queue_sound('increment')
+            await self.queue_sound(SoundEffect.INCREMENT)
         elif new_value < old_value:
-            await self.queue_sound('decrement')
+            await self.queue_sound(SoundEffect.DECREMENT)
         else:
-            await self.queue_sound('value_change')
+            await self.queue_sound(SoundEffect.VALUE_CHANGE)
     
     async def on_operator_selected(self, operator_id: str):
         """Вызывается при выборе оператора"""
-        await self.queue_sound('operator_switch')
+        await self.queue_sound(SoundEffect.OPERATOR_SWITCH)
     
     async def on_mode_change(self, new_mode: str):
         """Вызывается при смене режима"""
-        await self.queue_sound('mode_change')
+        await self.queue_sound(SoundEffect.MODE_CHANGE)
     
     async def on_connection_created(self, from_op: str, to_op: str):
         """Вызывается при создании соединения"""
-        await self.queue_sound('connect')
-        await asyncio.sleep(0.05)
-        await self.queue_sound('success')
+        await self.queue_sequence('connection_made')
     
     async def on_connection_removed(self, from_op: str, to_op: str):
         """Вызывается при удалении соединения"""
-        await self.queue_sound('disconnect')
+        await self.queue_sound(SoundEffect.DISCONNECT)
     
     async def on_compile_success(self):
         """Вызывается при успешной компиляции"""
-        await self.sounds.play_sequence_async(['load_complete', 'success'], 0.1)
+        await self.queue_sequence('compile_success')
     
     async def on_compile_error(self, error_msg: str):
         """Вызывается при ошибке компиляции"""
-        await self.sounds.play_async('error')
-        await asyncio.sleep(0.1)
-        await self.sounds.play_async('warning')
+        await self.queue_sequence('compile_error')
     
     async def on_value_drag_start(self, value: float):
         """Вызывается при начале перетаскивания значения"""
-        await self.sounds.play_async('drag', cooldown=0.05)
+        await self.queue_sound(SoundConfig(SoundEffect.DRAG, cooldown=0.05))
     
     async def on_value_drag_end(self, value: float):
         """Вызывается при окончании перетаскивания"""
-        await self.sounds.play_async('drop')
+        await self.queue_sound(SoundEffect.DROP)
     
     async def on_ui_hover(self, element: str):
         """Вызывается при наведении на элемент"""
-        await self.sounds.play_async('hover', cooldown=0.1)
+        await self.queue_sound(SoundConfig(SoundEffect.HOVER, cooldown=0.1))
     
     async def on_ui_click(self, element: str):
         """Вызывается при клике на элемент"""
-        await self.sounds.play_async('select')
+        await self.queue_sound(SoundEffect.SELECT)
     
     async def on_progress_update(self, progress: int):
         """Вызывается при обновлении прогресса"""
         if progress % 25 == 0 and progress > 0:
-            await self.sounds.play_async('load_step', cooldown=0.1)
+            await self.queue_sound(SoundConfig(SoundEffect.LOAD_STEP, cooldown=0.1))
         
         if progress == 100:
-            await self.sounds.play_async('load_complete')
+            await self.queue_sound(SoundEffect.LOAD_COMPLETE)
     
     async def on_special_action(self, action_name: str):
         """Вызывается при специальных действиях"""
         special_sounds = {
-            'glitch': 'glitch',
-            'power_on': 'power_up',
-            'power_off': 'power_down',
-            'teleport': 'teleport',
-            'collect': 'pixel_collect',
-            'jump': 'pixel_jump',
+            'glitch': SoundEffect.GLITCH,
+            'power_on': SoundEffect.POWER_UP,
+            'power_off': SoundEffect.POWER_DOWN,
+            'teleport': SoundEffect.TELEPORT,
+            'collect': SoundEffect.PIXEL_COLLECT,
+            'jump': SoundEffect.PIXEL_JUMP,
         }
         
-        sound_name = special_sounds.get(action_name)
-        if sound_name:
-            await self.sounds.play_async(sound_name)
+        sound = special_sounds.get(action_name)
+        if sound:
+            await self.queue_sound(sound)
     
+    async def play_background_music(self, sound: SoundEffect, volume: float = 0.2):
+        """Запускает фоновую музыку (зацикленный звук)"""
+        sound_obj = self.sounds.get_sound(sound)
+        if sound_obj and not isinstance(sound_obj, list):
+            sound_obj.set_volume(volume)
+            channel = sound_obj.play(loops=-1)
+            return channel
+        return None
     
     async def fade_out_background(self, channel, duration: float = 1.0):
         """Плавно убирает фоновый звук"""
@@ -415,158 +680,86 @@ class AsyncVisualProgrammerAudio:
                 await asyncio.sleep(duration / steps)
             channel.stop()
 
-# Асинхронное демо
-async def async_demo():
-    """Асинхронная демонстрация"""
-    # Инициализация pygame
-    pygame.init()
-    screen = pygame.display.set_mode((500, 400))
-    pygame.display.set_caption("Асинхронное демо звуков программатора")
-    font = pygame.font.Font(None, 24)
-    clock = pygame.time.Clock()
-    
-    # Создаем аудиосистему
-    audio = AsyncVisualProgrammerAudio()
-    
-    # Запускаем обработку очереди
-    await audio.start_processing()
-    
-    # Переменные для демо
-    progress = 0
-    last_progress_time = 0
-    selected_button = None
-    demo_text = ""
-    
-    print("Запуск асинхронного демо звуков...")
-    print("Нажмите:")
-    print("1-9 - цифровые звуки")
-    print("C - компиляция успех")
-    print("E - ошибка")
-    print("H - наведение")
-    print("S - выбор")
-    print("P - прогресс")
-    print("T - телепорт")
-    print("M - фоновая музыка")
-    print("F - остановить музыку")
-    print("ESC - выход")
-    
-    running = True
-    while running:
-        # Обработка событий pygame
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                elif event.key == pygame.K_c:
-                    await audio.on_compile_success()
-                    demo_text = "Компиляция успешна!"
-                elif event.key == pygame.K_e:
-                    await audio.on_compile_error("Test error")
-                    demo_text = "Ошибка компиляции!"
-                elif event.key == pygame.K_h:
-                    await audio.on_ui_hover("button")
-                    demo_text = "Наведение на кнопку"
-                elif event.key == pygame.K_s:
-                    await audio.on_ui_click("button")
-                    demo_text = "Клик по кнопке"
-                elif event.key == pygame.K_p:
-                    demo_text = "Запуск прогресса..."
-                    # Имитация прогресса
-                    for p in [25, 50, 75, 100]:
-                        await audio.on_progress_update(p)
-                        await asyncio.sleep(0.5)
-                elif event.key == pygame.K_t:
-                    await audio.on_special_action('teleport')
-                    demo_text = "Телепортация!"
-                elif event.key == pygame.K_m:
-                    channel = await audio.play_background_music('power_up', 0.15)
-                    audio.background_channel = channel
-                    demo_text = "Фоновая музыка включена"
-                elif event.key == pygame.K_f:
-                    if hasattr(audio, 'background_channel'):
-                        await audio.fade_out_background(audio.background_channel, 0.5)
-                        demo_text = "Музыка выключена"
-                elif pygame.K_1 <= event.key <= pygame.K_9:
-                    num = event.key - pygame.K_0
-                    await audio.sounds.play_async(f'digit_{num}')
-                    demo_text = f"Цифра {num}"
-        
-        # Автоматический прогресс для демо
-        current_time = pygame.time.get_ticks()
-        if current_time - last_progress_time > 3000:
-            progress = (progress + 10) % 110
-            if progress <= 100:
-                await audio.on_progress_update(progress)
-            last_progress_time = current_time
-        
-        # Отрисовка
-        screen.fill((30, 30, 40))
-        
-        y = 20
-        lines = [
-            "Асинхронный звуковой движок",
-            "для визуального программатора",
-            "",
-            f"Прогресс: {progress}%",
-            "",
-            f"Последнее действие: {demo_text}",
-            "",
-            "Управление:",
-            "C - успех | E - ошибка",
-            "H - наведение | S - выбор",
-            "P - прогресс | T - телепорт",
-            "M - музыка | F - стоп",
-            "1-9 - цифры | ESC - выход"
-        ]
-        
-        for i, line in enumerate(lines):
-            if i == 0:
-                color = (100, 255, 100)  # Зеленый для заголовка
-            elif i == len(lines) - 1:
-                color = (255, 100, 100)  # Красный для выхода
-            elif ":" in line:
-                color = (200, 200, 100)  # Желтый для команд
-            else:
-                color = (200, 200, 200)  # Серый для остального
-            
-            text = font.render(line, True, color)
-            screen.blit(text, (20, y))
-            y += 25
-        
-        pygame.display.flip()
-        
-        # Асинхронное ожидание
-        await asyncio.sleep(0)
-        clock.tick(30)
-    
-    # Очистка
-    await audio.stop_processing()
-    await audio.sounds.stop_all()
-    pygame.quit()
 
-
-
-# Пример использования в основном коде:
-async def main():
+# Пример использования
+async def enum_demo():
+    """Демонстрация использования Enum"""
     audio = AsyncVisualProgrammerAudio()
     await audio.start_processing()
-    running = True
     
-    # Ваш основной код здесь
-    while running:
-        # Обработка событий
-        await audio.on_ui_hover("button")
-        await asyncio.sleep(2)
+    print("Демонстрация использования Enum для звуков:")
     
+    # Прямое воспроизведение по Enum
+    print("\n1. Прямое воспроизведение:")
+    await audio.sounds.play_async(SoundEffect.SUCCESS)
+    await asyncio.sleep(0.3)
+    
+    # Использование SoundConfig
+    print("\n2. С конфигурацией:")
+    config = SoundConfig(
+        sound=SoundEffect.BEEP,
+        volume=0.8,
+        fade_in=0.05,
+        fade_out=0.1,
+        delay=0.2
+    )
+    await audio.sounds.play_with_config_async(config)
+    await asyncio.sleep(0.5)
+    
+    # Последовательность
+    print("\n3. Последовательность:")
+    await audio.sounds.play_sequence_async([
+        SoundEffect.CLICK,
+        SoundEffect.BEEP,
+        SoundConfig(SoundEffect.SUCCESS, volume=0.7)
+    ])
+    await asyncio.sleep(0.8)
+    
+    # Использование предопределенных последовательностей
+    print("\n4. Предопределенная последовательность:")
+    await audio.queue_sequence('power_on')
+    await asyncio.sleep(1)
+    
+    # Цифры
+    print("\n5. Цифры:")
+    for i in range(10):
+        await audio.sounds.play_for_digit_async(i)
+        await asyncio.sleep(0.1)
+    
+    # Обработка событий
+    print("\n6. Имитация событий программатора:")
+    await audio.on_operator_change("op1", 5, 10)
+    await asyncio.sleep(0.2)
+    await audio.on_connection_created("op1", "op2")
+    await asyncio.sleep(0.3)
+    await audio.on_compile_success()
+    await asyncio.sleep(0.5)
+    await audio.on_compile_error("Syntax error")
+    
+    await asyncio.sleep(1)
     await audio.stop_processing()
 
 
-# # Запуск
-# asyncio.run(main())
+async def example():
+    # Прямое использование Enum
+    audio = AsyncProgrammerSounds()
 
-# Точка входа
+    await audio.play_async(SoundEffect.SUCCESS)
+
+    # С конфигурацией
+    config = SoundConfig(SoundEffect.BEEP, volume=0.5, fade_in=0.1)
+    await audio.play_with_config_async(config)
+
+    # Последовательность
+    await audio.play_sequence_async([
+        SoundEffect.CLICK,
+        SoundEffect.BEEP,
+        SoundConfig(SoundEffect.SUCCESS, delay=0.2)
+    ])
+
+    # Цифры
+    await audio.play_for_digit_async(5)
+
 if __name__ == "__main__":
-    # Запуск асинхронного демо
-    asyncio.run(main())
+    # Запуск демо
+    asyncio.run(enum_demo())

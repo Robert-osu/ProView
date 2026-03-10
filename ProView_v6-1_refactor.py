@@ -14,7 +14,7 @@ from Grid import GridObject
 from utils import ValueTracker, GetImage
 from TextInput import TextInput
 from cmd_with_img_config import CommandConfig
-from test_async_sound import AsyncVisualProgrammerAudio
+from test_async_sound import AsyncProgrammerSounds, SoundEffect
 
 
 
@@ -36,7 +36,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         self.thumb_size = int(64 * self.k_size)
 
         self.pro = pro
-        self.on_audio = False
+        self.on_audio = None
         self.cmd_list = pro._commands # commands
         self.cols = 16
         self.rows = (len(self.cmd_list) + self.cols - 1) // self.cols
@@ -95,7 +95,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
                     self.close_input()
                 print(f"[DEBUG] Нажатие мыши: кнопка {event.button}")
                 if event.button == 1:  # Левая кнопка мыши
-                    
+                    self.on_audio = SoundEffect.CLICK
                     if self.selected.current != new_hovered:
                         self.selected.update(new_hovered)
                         print(f"[DEBUG] Выбран элемент: {new_hovered}")
@@ -276,6 +276,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             self.cmd_list[id] = cmd
             self.pro.addCommand(id, cmd)
             self.grid.update_cell_image(id, cmd)
+            self.on_audio = SoundEffect.DIGIT_3
             self.re_grid = True
 
     def check_hover(self):
@@ -286,7 +287,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         if mouse_y < self.panel_height:
             page = self.grid.get_nav_button_at_position(mouse_x, mouse_y)
             if page != None and self.grid.pagehover != page:
-                self.on_audio = True
+                self.on_audio = SoundEffect.HOVER
                 self.grid.pagehover = page
                 self.re_top = True
         elif self.grid.pagehover != None:
@@ -336,11 +337,6 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
             y <= mouse_y <= y + self.thumb_size):
             self.x = x
             self.y = y
-            
-            # Обновляем hovered.current если изменился
-            if index != self.hovered.current:
-                # Здесь можно добавить логику обновления
-                pass
                 
             return index
         
@@ -361,8 +357,10 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         print("[DEBUG] copy_to_clipboard вызван!")
         try:
             pygame.scrap.put_text(self.pro.getEncode())
+            self.on_audio = SoundEffect.LOAD_START
             print("[DEBUG] Скопировано в буфер обмена!")
         except Exception as e:
+            self.on_audio = SoundEffect.ERROR
             print(f"[DEBUG] Ошибка копирования: {e}")
 
     def paste_from_clipboard(self):
@@ -376,9 +374,12 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
                 self.update_from_pro()
                 self.grid._create_all_cells()
                 self.re_grid = True
+                self.on_audio = SoundEffect.SUCCESS
             else:
+                self.on_audio = SoundEffect.ERROR
                 print("[DEBUG] Буфер обмена пуст или содержит не текст")
         except Exception as e:
+            self.on_audio = SoundEffect.ERROR
             print(f"[DEBUG] Ошибка вставки: {e}")
 
     def open_settings(self):
@@ -527,7 +528,7 @@ def run_audio_processing(audio):
 async def main():
     window_width, window_height = 1250, 910
 
-    audio = AsyncVisualProgrammerAudio()
+    audio = AsyncProgrammerSounds()
 
     # Запускаем audio в отдельном потоке
     audio_thread = threading.Thread(
@@ -562,9 +563,10 @@ async def main():
         # Запускаем менеджер и получаем сигнал о продолжении
         result = managerGO.run()
 
-        if pro_view.on_audio:
-            await audio.on_ui_hover("button")
-            pro_view.on_audio = False
+        sound = pro_view.on_audio
+        if sound != None:
+            await audio.play_async(sound)
+            pro_view.on_audio = None
             
         # Асинхронная "задержка" не блокирует цикл
         await asyncio.sleep(1/30)

@@ -1,6 +1,7 @@
 import pygame
 import sys
 from my_lib.GameObjectRenderer import GameObject
+from test_async_sound import SoundEffect
 
 
 class TextInput(GameObject):
@@ -214,12 +215,13 @@ class TextInput(GameObject):
             else:
                 # Ввод символов
                 if event.unicode and event.unicode.isprintable():
-                    print(type)
                     access = False
                     if (type == 1 or type == 0) and (event.unicode.isalpha() and event.unicode.isascii()):
                         access = True
                     elif event.unicode.isdigit():
                         access = True
+                    if access:
+                        self.ctx.on_audio = SoundEffect.VALUE_CHANGE
                     if access and self.text_selected and self.selection_start != self.selection_end:
                         # Заменяем выделенный текст
                         start = min(self.selection_start, self.selection_end)
