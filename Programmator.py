@@ -79,14 +79,16 @@ class Programmator:
             if i < len(self._commands):
                 self._commands[i] = list_commands[int(byte)]
 
-
-        self._values = self._parseValues(mod_data[size + bsize:])
+    
+        new_values = self._parseValues(mod_data[size + bsize:])
+        self._values[:len(new_values)] = new_values
 
     def addCommand(self, index, cmd: Command):
         if index >= 0 and index < self.size:
             self._commands[index] = cmd
             if cmd in Command.TWO_ARGS:
                 # Добавляем только если нужно дополнить до 2 элементов
+                print(index, "here", len(self._values))
                 current = self._values[index]
                 needed = 2 - len(current)
                 if needed > 0:
