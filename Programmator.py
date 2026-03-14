@@ -77,7 +77,7 @@ class Programmator:
         list_commands = list(Command)
         for i, byte in enumerate(mod_data[bsize:(size + bsize)]):
             if i < len(self._commands):
-                self._commands[i] = list_commands[int(byte)]
+                self.addCommand(i, list_commands[int(byte)])
 
     
         new_values = self._parseValues(mod_data[size + bsize:])
@@ -88,23 +88,26 @@ class Programmator:
             self._commands[index] = cmd
             if cmd in Command.TWO_ARGS:
                 # Добавляем только если нужно дополнить до 2 элементов
-                print(index, "here", len(self._values))
-                current = self._values[index]
-                needed = 2 - len(current)
-                if needed > 0:
-                    current.extend(['0'] * needed)  # получится ['3', '0'] или ['4', '5']
-                    self._values[index] = current
+                self.safeValue(index)
 
-    def addValue(self, index, value_tuple: ValueTuple):
+    def addValue(self, index, value, num = 0):
         if index > 0 and index < self.size:
             if self._commands[index] in Command.NO_ARGS:
                 return
             elif self._commands[index] in Command.ONE_ARGS:
-                self._values[index][0] = value_tuple[0]
+                self._values[index][0] = value
             elif self._commands[index] in Command.TWO_ARGS:
                 #print(value_tuple)
-                self._values[index][0], self._values[index][1] = value_tuple
+                self.safeValue(index)
+                self._values[index][num] = value
                 #print(self._values[index])
+
+    def safeValue(self, index):
+        current = self._values[index]
+        needed = 2 - len(current)
+        if needed > 0:
+            current.extend(['0'] * needed)  # получится ['3', '0'] или ['4', '5']
+            self._values[index] = current
 
     def getValue(self, index, i=0):
         if self._commands[index] in Command.NO_ARGS:

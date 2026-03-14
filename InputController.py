@@ -145,21 +145,71 @@ class ChangeCellCommand(KeyCommand):
 
 # ========== ПАТТЕРН ФАСАД ==========
 class KeyInputFacade:
-    """Фасад для работы с клавиатурой, использующий команды"""
+    """Фасад для работы с клавиатурой с поддержкой русской раскладки"""
     
     def __init__(self):
         self.key_bindings = {}  # {key: command}
-        self.scan_bindings = {}
-        self.mod_bindings = {}  # {(mod, key): command}
+        self.scan_bindings = {}  # {(mod, scan): command}
+        self.char_bindings = {}  # {'char': command} - привязка по символу
+        self.combo_bindings = {}  # {'combo_string': command}
+        self.mod_bindings = {}
         self.held_keys = set()
+        
+        # Маппинг русских символов на английские
+        self.ru_to_en = {
+            # Строчные
+            'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 'e', 'н': 'n',
+            'г': 'g', 'ш': 'i', 'щ': 'o', 'з': 'z', 'х': 'x', 'ъ': ']',
+            'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h',
+            'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';', 'э': "'", 'ё': '`',
+            'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n',
+            'ь': 'm', 'б': ',', 'ю': '.',
+            
+            # Заглавные
+            'Й': 'Q', 'Ц': 'W', 'У': 'E', 'К': 'R', 'Е': 'E', 'Н': 'N',
+            'Г': 'G', 'Ш': 'I', 'Щ': 'O', 'З': 'Z', 'Х': 'X', 'Ъ': '}',
+            'Ф': 'A', 'Ы': 'S', 'В': 'D', 'А': 'F', 'П': 'G', 'Р': 'H',
+            'О': 'J', 'Л': 'K', 'Д': 'L', 'Ж': ':', 'Э': '"', 'Ё': '~',
+            'Я': 'Z', 'Ч': 'X', 'С': 'C', 'М': 'V', 'И': 'B', 'Т': 'N',
+            'Ь': 'M', 'Б': '<', 'Ю': '>',
+        }
+        
+        # Обратный маппинг (английские на русские)
+        self.en_to_ru = {v: k for k, v in self.ru_to_en.items()}
+        
+        # Кэш для быстрого доступа
+        self.key_names_cache = {}
         
         # Настройка повторения клавиш
         pygame.key.set_repeat(500, 50)
+        
+        # Режим отладки
+        self.debug_mode = False
+    
+    def normalize_key(self, key_char):
+        """Преобразует русский символ в английский"""
+        if key_char in self.ru_to_en:
+            return self.ru_to_en[key_char]
+        return key_char
+    
+    def get_key_char(self, event):
+        """Получает символ клавиши с учетом раскладки"""
+        if event.unicode:
+            return event.unicode
+        return None
     
     def bind_key(self, key, command):
-        """Привязать команду к клавише"""
+        """Привязать команду к клавише (по коду клавиши)"""
         if isinstance(command, KeyCommand):
             self.key_bindings[key] = command
+        else:
+            raise ValueError("Объект должен быть экземпляром KeyCommand")
+    
+    def bind_char(self, char, command):
+        """Привязать команду к символу (работает в любой раскладке)"""
+        if isinstance(command, KeyCommand):
+            # Сохраняем привязку для символа
+            self.char_bindings[char.lower()] = command
         else:
             raise ValueError("Объект должен быть экземпляром KeyCommand")
     
@@ -171,7 +221,7 @@ class KeyInputFacade:
             raise ValueError("Объект должен быть экземпляром KeyCommand")
     
     def bind_combo(self, combo, command):
-        """Привязать команду к комбинации (например 'ctrl+c')"""
+        """Привязать команду к комбинации (например 'ctrl+c') с поддержкой русской раскладки"""
         parts = combo.lower().split('+')
         key_name = parts[-1]
         mods = 0
@@ -183,75 +233,266 @@ class KeyInputFacade:
         if 'alt' in parts:
             mods |= pygame.KMOD_ALT
         
-        try:
-            key_const = getattr(pygame, f"K_{key_name}")
-            if mods:
-                self.bind_mod_key(mods, key_const, command)
+        # Сохраняем строковое представление комбинации
+        self.combo_bindings[combo.lower()] = command
+        
+        # Для комбинаций с модификаторами сохраняем в mod_bindings
+        if mods:
+            # Сохраняем key_name как строку для последующего сравнения
+            self.mod_bindings[(mods, key_name)] = command
+        else:
+            # Без модификаторов
+            if len(key_name) == 1 and key_name.isalpha():
+                self.bind_char(key_name, command)
             else:
-                self.bind_key(key_const, command)
-        except AttributeError:
-            print(f"Предупреждение: клавиша {key_name} не найдена в pygame")
+                try:
+                    key_const = getattr(pygame, f"K_{key_name}")
+                    self.bind_key(key_const, command)
+                except AttributeError:
+                    print(f"Предупреждение: клавиша {key_name} не найдена в pygame")
     
     def bind_scan_code(self, scan_code, mod, command):
         """Привязать команду к скан-коду (не зависит от раскладки)"""
-        self.scan_bindings[(mod, scan_code)] = command
-
+        if isinstance(command, KeyCommand):
+            self.scan_bindings[(mod, scan_code)] = command
+        else:
+            raise ValueError("Объект должен быть экземпляром KeyCommand")
+    
     def handle_event(self, event):
+        """Обработка событий клавиатуры"""
         if event.type == pygame.KEYDOWN:
-            print(f"Scan code for {pygame.key.name(event.key)}: {event.scancode}")
+            # Отладка
+            if self.debug_mode:
+                self._debug_print(event)
+            
             self.held_keys.add(event.key)
             
-            # Проверка по скан-коду (приоритет)
-            for (mod, scan), cmd in self.scan_bindings.items():
-                if event.scancode == scan and (event.mod & mod):
-                    cmd.execute()
-                    return
-                elif event.scancode == scan and (mod == pygame.KMOD_NONE):
-                    cmd.execute()
-                    return
+            # Получаем символ клавиши
+            key_char = self.get_key_char(event)
             
-            # Стандартная проверка
-            self._trigger_command(event.key, event.mod)
+            # 1. Приоритет: скан-коды (самые надежные)
+            if self._check_scan_bindings(event):
+                return
+            
+            # 2. Комбинации с модификаторами
+            if self._check_mod_bindings(event, key_char):
+                return
+            
+            # 3. Привязка по символу (с нормализацией русских букв)
+            if key_char and self._check_char_bindings(key_char, event.mod):
+                return
+            
+            # 4. Обычные клавиши по коду
+            if self._check_key_bindings(event.key):
+                return
         
         elif event.type == pygame.KEYUP:
             if event.key in self.held_keys:
                 self.held_keys.remove(event.key)
     
-    def _trigger_command(self, key, mods):
-        """Запуск команды по нажатой клавише"""
+    def _check_scan_bindings(self, event):
+        """Проверка привязок по скан-коду"""
+        for (mod, scan), cmd in self.scan_bindings.items():
+            if event.scancode == scan:
+                if mod == pygame.KMOD_NONE or (event.mod & mod):
+                    if self.debug_mode:
+                        print(f"Скан-код: {scan} -> команда")
+                    cmd.execute()
+                    return True
+        return False
+    
+    def _check_mod_bindings(self, event, key_char):
+        """Проверка комбинаций с модификаторами"""
+        # Нормализуем символ для сравнения
+        norm_char = self.normalize_key(key_char) if key_char else None
+        print("event.key:", event.key, "norm_char:", norm_char, "key_char:", key_char)
+
+        print("UNICODE:", event.unicode, "KEY:", event.key, "MOD:", event.mod)
         
-        # Для отладки - преобразуем key в читаемый вид
-        key_name = pygame.key.name(key) if hasattr(pygame.key, 'name') else str(key)
-        print(f"DEBUG: key={key} ({key_name}), mods={mods}, mods & KMOD_CTRL={mods & pygame.KMOD_CTRL}")
+        # Получаем состояние всех клавиш
+        keys = pygame.key.get_pressed()
         
-        # Проверка комбинаций с модификаторами
+        # Определяем текущие модификаторы по состоянию клавиш
+        ctrl_pressed = keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]
+        shift_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        alt_pressed = keys[pygame.K_LALT] or keys[pygame.K_RALT]
+        
+        current_mods = 0
+        if ctrl_pressed:
+            current_mods |= pygame.KMOD_CTRL
+        if shift_pressed:
+            current_mods |= pygame.KMOD_SHIFT
+        if alt_pressed:
+            current_mods |= pygame.KMOD_ALT
+        
+        print(f"DEBUG: current_mods={current_mods}, event.mod={event.mod}, key_char={repr(key_char)}")
+        
         for (req_mods, req_key), command in self.mod_bindings.items():
-            # Для клавиши 'c' используем и числовое значение, и символьное
-            key_matches = (key == req_key or 
-                        (req_key == pygame.K_c and key_name == 'c') or
-                        (req_key == pygame.K_c and key == 99))  # ASCII код 'c'
+            print(f"EXECUTE:0 - проверка req_mods={req_mods}, req_key={req_key}")
+            
+            # Проверяем совпадение модификаторов
+            if (current_mods & req_mods) != req_mods:
+                print(f"Модификаторы не совпадают: current_mods={current_mods}, req_mods={req_mods}")
+                continue
+            
+            print("EXECUTE:1 - модификаторы совпали")
+            
+            # Проверяем совпадение клавиши
+            key_matches = False
+            
+            # 1. Проверка по символу (для обычных букв)
+            if key_char and key_char.isprintable() and isinstance(req_key, str):
+                # Для Ctrl+буква в event.unicode может быть управляющий символ (например, \x03 для Ctrl+C)
+                # Поэтому для Ctrl используем альтернативный способ
+                if current_mods & pygame.KMOD_CTRL:
+                    # Получаем имя клавиши из event
+                    key_name = pygame.key.name(event.key)
+                    key_matches = (key_name.lower() == req_key.lower())
+                    print(f"EXECUTE:2a - Ctrl: сравнение имен: {key_name} vs {req_key} = {key_matches}")
+                else:
+                    # Обычное сравнение символов
+                    key_matches = (norm_char.lower() == req_key.lower()) if norm_char else False
+                    print(f"EXECUTE:2b - сравнение символов: {norm_char} vs {req_key} = {key_matches}")
+            
+            # 2. Для специальных клавиш (если нет символа)
+            elif not key_char and isinstance(req_key, str):
+                key_name = pygame.key.name(event.key)
+                key_matches = (key_name.lower() == req_key.lower())
+                print(f"EXECUTE:2c - спец. клавиша: {key_name} vs {req_key} = {key_matches}")
+            
+            # 3. Для числовых кодов клавиш
+            elif isinstance(req_key, int):
+                key_matches = (event.key == req_key)
+                print(f"EXECUTE:2d - сравнение кодов: {event.key} vs {req_key} = {key_matches}")
             
             if key_matches:
-                # Проверяем наличие Ctrl
-                if req_mods & pygame.KMOD_CTRL:
-                    if mods & pygame.KMOD_CTRL:
-                        print(f"Найдена команда для Ctrl+{key_name}")
-                        command.execute()
-                        return
-                # Для других модификаторов
-                elif (mods & req_mods) == req_mods:
-                    command.execute()
-                    return
+                print(f"EXECUTE:3 - НАЙДЕНО СОВПАДЕНИЕ!")
+                command.execute()
+                return True
         
-        # Проверка обычных клавиш
+        return False
+    
+    def _check_char_bindings(self, key_char, mods):
+        """Проверка привязок по символу"""
+        # Проверяем оригинальный символ
+        if key_char.lower() in self.char_bindings:
+            # Проверяем, не является ли это частью комбинации с модификатором
+            if mods & pygame.KMOD_CTRL:
+                # Для Ctrl+буква используем отдельную обработку
+                combo = f"ctrl+{key_char.lower()}"
+                if combo in self.combo_bindings:
+                    return False  # Пусть обработается через combo_bindings
+            
+            if self.debug_mode:
+                print(f"Символ: {key_char} -> команда")
+            self.char_bindings[key_char.lower()].execute()
+            return True
+        
+        # Проверяем нормализованный символ (русский -> английский)
+        norm_char = self.normalize_key(key_char)
+        if norm_char != key_char and norm_char.lower() in self.char_bindings:
+            if self.debug_mode:
+                print(f"Символ (норм.): {key_char} -> {norm_char} -> команда")
+            self.char_bindings[norm_char.lower()].execute()
+            return True
+        
+        return False
+    
+    def _check_key_bindings(self, key):
+        """Проверка привязок по коду клавиши"""
         if key in self.key_bindings:
+            if self.debug_mode:
+                print(f"Код клавиши: {key} -> команда")
             self.key_bindings[key].execute()
+            return True
+        return False
     
     def is_held(self, key):
         """Проверка, удерживается ли клавиша"""
+        if isinstance(key, str):
+            # Поиск по символу
+            for held_key in self.held_keys:
+                key_name = pygame.key.name(held_key)
+                if key_name.lower() == key.lower():
+                    return True
+            return False
         return key in self.held_keys
     
-    def update_key_bindings(self, key_bindings_dict):
-        """Обновление привязок из словаря (для совместимости)"""
-        # Этот метод можно использовать для синхронизации с существующим key_bindings
-        pass
+    def get_pressed_mods(self):
+        """Получить текущие нажатые модификаторы"""
+        mods = 0
+        keys = pygame.key.get_pressed()
+        
+        if keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]:
+            mods |= pygame.KMOD_CTRL
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            mods |= pygame.KMOD_SHIFT
+        if keys[pygame.K_LALT] or keys[pygame.K_RALT]:
+            mods |= pygame.KMOD_ALT
+        
+        return mods
+    
+    def clear_bindings(self):
+        """Очистить все привязки"""
+        self.key_bindings.clear()
+        self.scan_bindings.clear()
+        self.char_bindings.clear()
+        self.combo_bindings.clear()
+    
+    def set_debug(self, enabled=True):
+        """Включить/выключить режим отладки"""
+        self.debug_mode = enabled
+    
+    def _debug_print(self, event):
+        """Вывод отладочной информации"""
+        key_name = pygame.key.name(event.key)
+        key_char = self.get_key_char(event)
+        mod_names = self._get_mod_names(event.mod)
+        
+        print(f"KEYDOWN: код={event.key}, имя={key_name}, скан={event.scancode}, "
+              f"символ={key_char or 'None'}, моды={mod_names}")
+    
+    def _get_mod_names(self, mods):
+        """Получить список названий модификаторов"""
+        names = []
+        if mods & pygame.KMOD_CTRL:
+            names.append('Ctrl')
+        if mods & pygame.KMOD_SHIFT:
+            names.append('Shift')
+        if mods & pygame.KMOD_ALT:
+            names.append('Alt')
+        return names
+    
+    def _get_key_name(self, key_code, key_char=None):
+        """Получить имя клавиши для отладки"""
+        if key_char:
+            return key_char
+        return pygame.key.name(key_code)
+
+
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((600, 400))
+    pygame.display.set_caption("KeyInputFacade Demo")
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 32)
+    
+    # Создаем фасад
+    keyboard = KeyInputFacade()
+    keyboard.set_debug(True)  # Включаем отладку
+    
+    # Привязываем команды
+    # keyboard.bind_combo('ctrl+s', SaveCommand())
+    # keyboard.bind_combo('ctrl+c', CopyCommand())
+    # keyboard.bind_combo('ctrl+v', PasteCommand())
+    # keyboard.bind_combo('ctrl+z', UndoCommand())
+    # keyboard.bind_combo('ctrl+q', ExitCommand())
+    
+    # Привязка по символам (работает в любой раскладке)
+    # keyboard.bind_char('a', SaveCommand())  # A или Ф вызовут Save
+    
+    # Привязка по скан-коду (не зависит от раскладки)
+    # Скан-код 22 = S в английской, Ы в русской
+    # keyboard.bind_scan_code(22, pygame.KMOD_CTRL, SaveCommand())
+ 

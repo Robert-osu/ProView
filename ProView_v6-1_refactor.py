@@ -15,6 +15,7 @@ from utils import ValueTracker, GetImage
 from TextInput import TextInput
 from cmd_with_img_config import CommandConfig
 from test_async_sound import AsyncProgrammerSounds, SoundEffect
+from ScanCodeEnum import ScanCode
 
 
 
@@ -67,6 +68,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     def run(self):
         new_hovered = self.check_hover()
         time_delta = self.clock.tick(60)/1000.0
+
         
         # Обработка событий
         for event in pygame.event.get():
@@ -116,7 +118,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
 
     def handle_text_input(self, event):
         # активирует ввод текста при клике на ячейку
-        # 
+        # ы
 
         id = self.hovered.current
         if self.is_input and id != self.text.id_cmd:
@@ -170,7 +172,7 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         id = self.text.id_cmd
         cmd = self.cmd_list[id]
         num = self.text.num_cmd
-        self.pro._values[id][num] = self.text.text
+        self.pro.addValue(id, self.text.text, num)
         self.text.off_active()
         self.grid._create_cell(id, cmd, 2)
             
@@ -183,6 +185,9 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         
         # === 3. Состояние и трекеры ===
         self._init_state_trackers()
+
+
+        
         
         
         # === 7. Команды и фасад ===
@@ -227,13 +232,14 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
         print(f"[DEBUG] _init_commands_and_facade")
 
         # self.ui_manager = pygame_gui.UIManager((self.window_width, self.window_height))
-        self.key_bind_window = None 
+        # self.key_bind_window = None 
         
         # Команды
         self._create_commands()
         
         # Фасад
         self.key_facade = KeyInputFacade()
+        self.key_facade.set_debug(True)
         self._setup_key_facade()
         
         # Словарь для обратной совместимости
@@ -468,62 +474,82 @@ class ProgrammatorViewer(GameObject): # Теперь сам viewer тоже Game
     
     def _setup_key_facade(self):
         """Настройка привязки клавиш к командам через фасад"""
+
+        # self.handler.start()
+
+        # Добавляем бинды
+        # self.handler.add_binding(
+        #     keyboard.KeyCode.from_char('w'), 
+        #     Modifier.SHIFT, 
+        #     self.change_cell_shiftw_cmd
+        # )
+        # self.handler.add_binding(
+        #     keyboard.KeyCode.from_char('w'), 
+        #     Modifier.NONE, 
+        #     self.change_cell_w_cmd
+        # )
+
         
         # Привязка обычных клавиш
+        # self.key_facade.bind_char('d', self.change_cell_d_cmd) 
         # self.key_facade.bind_key(pygame.K_UP, self.scroll_up_cmd)
         # self.key_facade.bind_key(pygame.K_DOWN, self.scroll_down_cmd)
         # self.key_facade.bind_key(pygame.K_SPACE, self.select_cmd)
         # self.key_facade.bind_key(pygame.K_ESCAPE, self.open_settings_cmd)
         
         # Привязка комбинаций с модификаторами
-        self.key_facade.bind_scan_code(6, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
-        self.key_facade.bind_scan_code(25, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
+        # self.key_facade.bind_mod_key(pygame.KMOD_LCTRL, pygame.K_c, self.copy_clipboard_cmd)
+        # self.key_facade.bind_mod_key(pygame.KMOD_LSHIFT, pygame.K_a, self.change_cell_shifta_cmd)
 
-        self.key_facade.bind_scan_code(26, pygame.KMOD_SHIFT, self.change_cell_shiftw_cmd)
-        self.key_facade.bind_scan_code(7, pygame.KMOD_SHIFT, self.change_cell_shiftd_cmd)
-        self.key_facade.bind_scan_code(22, pygame.KMOD_SHIFT, self.change_cell_shifts_cmd)
-        self.key_facade.bind_scan_code(4, pygame.KMOD_SHIFT, self.change_cell_shifta_cmd)
 
-        self.key_facade.bind_scan_code(26, pygame.KMOD_NONE, self.change_cell_w_cmd)
-        self.key_facade.bind_scan_code(7, pygame.KMOD_NONE, self.change_cell_d_cmd)
-        self.key_facade.bind_scan_code(22, pygame.KMOD_NONE, self.change_cell_s_cmd)
-        self.key_facade.bind_scan_code(4, pygame.KMOD_NONE, self.change_cell_a_cmd)
-        self.key_facade.bind_scan_code(20, pygame.KMOD_NONE, self.change_cell_q_cmd)
-        self.key_facade.bind_scan_code(8, pygame.KMOD_NONE, self.change_cell_e_cmd)
-        self.key_facade.bind_scan_code(21, pygame.KMOD_NONE, self.change_cell_r_cmd)
-        self.key_facade.bind_scan_code(23, pygame.KMOD_NONE, self.change_cell_t_cmd)
-        self.key_facade.bind_scan_code(28, pygame.KMOD_NONE, self.change_cell_y_cmd)
-        self.key_facade.bind_scan_code(12, pygame.KMOD_NONE, self.change_cell_i_cmd)
-        self.key_facade.bind_scan_code(18, pygame.KMOD_NONE, self.change_cell_o_cmd)
+        self.key_facade.bind_scan_code(ScanCode.C, pygame.KMOD_CTRL, self.copy_clipboard_cmd)
+        self.key_facade.bind_scan_code(ScanCode.V, pygame.KMOD_CTRL, self.paste_clipboard_cmd)
 
-        self.key_facade.bind_scan_code(9, pygame.KMOD_SHIFT, self.change_cell_shiftf_cmd)
-        self.key_facade.bind_scan_code(9, pygame.KMOD_NONE, self.change_cell_f_cmd)
-        self.key_facade.bind_scan_code(10, pygame.KMOD_NONE, self.change_cell_g_cmd)
-        self.key_facade.bind_scan_code(11, pygame.KMOD_NONE, self.change_cell_h_cmd)
-        self.key_facade.bind_scan_code(13, pygame.KMOD_NONE, self.change_cell_j_cmd)
-        self.key_facade.bind_scan_code(15, pygame.KMOD_NONE, self.change_cell_l_cmd)
+        self.key_facade.bind_scan_code(ScanCode.W, pygame.KMOD_SHIFT, self.change_cell_shiftw_cmd)
+        self.key_facade.bind_scan_code(ScanCode.D, pygame.KMOD_SHIFT, self.change_cell_shiftd_cmd)
+        self.key_facade.bind_scan_code(ScanCode.S, pygame.KMOD_SHIFT, self.change_cell_shifts_cmd)
+        self.key_facade.bind_scan_code(ScanCode.A, pygame.KMOD_SHIFT, self.change_cell_shifta_cmd)
 
-        self.key_facade.bind_scan_code(29, pygame.KMOD_SHIFT, self.change_cell_shiftz_cmd)
-        self.key_facade.bind_scan_code(29, pygame.KMOD_NONE, self.change_cell_z_cmd)
-        self.key_facade.bind_scan_code(27, pygame.KMOD_SHIFT, self.change_cell_shiftx_cmd)
-        self.key_facade.bind_scan_code(27, pygame.KMOD_NONE, self.change_cell_x_cmd)
-        self.key_facade.bind_scan_code(6, pygame.KMOD_SHIFT, self.change_cell_shiftc_cmd)
-        self.key_facade.bind_scan_code(6, pygame.KMOD_NONE, self.change_cell_c_cmd)
-        self.key_facade.bind_scan_code(25, pygame.KMOD_NONE, self.change_cell_v_cmd)
-        self.key_facade.bind_scan_code(5, pygame.KMOD_SHIFT, self.change_cell_shiftb_cmd)
-        self.key_facade.bind_scan_code(5, pygame.KMOD_NONE, self.change_cell_b_cmd)
-        self.key_facade.bind_scan_code(16, pygame.KMOD_NONE, self.change_cell_m_cmd)
+        self.key_facade.bind_scan_code(ScanCode.W, pygame.KMOD_NONE, self.change_cell_w_cmd)
+        self.key_facade.bind_scan_code(ScanCode.D, pygame.KMOD_NONE, self.change_cell_d_cmd)
+        self.key_facade.bind_scan_code(ScanCode.S, pygame.KMOD_NONE, self.change_cell_s_cmd)
+        self.key_facade.bind_scan_code(ScanCode.A, pygame.KMOD_NONE, self.change_cell_a_cmd)
+        self.key_facade.bind_scan_code(ScanCode.Q, pygame.KMOD_NONE, self.change_cell_q_cmd)
+        self.key_facade.bind_scan_code(ScanCode.E, pygame.KMOD_NONE, self.change_cell_e_cmd)
+        self.key_facade.bind_scan_code(ScanCode.R, pygame.KMOD_NONE, self.change_cell_r_cmd)
+        self.key_facade.bind_scan_code(ScanCode.T, pygame.KMOD_NONE, self.change_cell_t_cmd)
+        self.key_facade.bind_scan_code(ScanCode.Y, pygame.KMOD_NONE, self.change_cell_y_cmd)
+        self.key_facade.bind_scan_code(ScanCode.I, pygame.KMOD_NONE, self.change_cell_i_cmd)
+        self.key_facade.bind_scan_code(ScanCode.O, pygame.KMOD_NONE, self.change_cell_o_cmd)
 
-        self.key_facade.bind_scan_code(42, pygame.KMOD_NONE, self.change_cell_backspace_cmd)
+        self.key_facade.bind_scan_code(ScanCode.F, pygame.KMOD_SHIFT, self.change_cell_shiftf_cmd)
+        self.key_facade.bind_scan_code(ScanCode.F, pygame.KMOD_NONE, self.change_cell_f_cmd)
+        self.key_facade.bind_scan_code(ScanCode.G, pygame.KMOD_NONE, self.change_cell_g_cmd)
+        self.key_facade.bind_scan_code(ScanCode.H, pygame.KMOD_NONE, self.change_cell_h_cmd)
+        self.key_facade.bind_scan_code(ScanCode.J, pygame.KMOD_NONE, self.change_cell_j_cmd)
+        self.key_facade.bind_scan_code(ScanCode.L, pygame.KMOD_NONE, self.change_cell_l_cmd)
+
+        self.key_facade.bind_scan_code(ScanCode.Z, pygame.KMOD_SHIFT, self.change_cell_shiftz_cmd)
+        self.key_facade.bind_scan_code(ScanCode.Z, pygame.KMOD_NONE, self.change_cell_z_cmd)
+        self.key_facade.bind_scan_code(ScanCode.X, pygame.KMOD_SHIFT, self.change_cell_shiftx_cmd)
+        self.key_facade.bind_scan_code(ScanCode.X, pygame.KMOD_NONE, self.change_cell_x_cmd)
+        self.key_facade.bind_scan_code(ScanCode.C, pygame.KMOD_SHIFT, self.change_cell_shiftc_cmd)
+        self.key_facade.bind_scan_code(ScanCode.C, pygame.KMOD_NONE, self.change_cell_c_cmd)
+        self.key_facade.bind_scan_code(ScanCode.V, pygame.KMOD_NONE, self.change_cell_v_cmd)
+        self.key_facade.bind_scan_code(ScanCode.B, pygame.KMOD_SHIFT, self.change_cell_shiftb_cmd)
+        self.key_facade.bind_scan_code(ScanCode.B, pygame.KMOD_NONE, self.change_cell_b_cmd)
+        self.key_facade.bind_scan_code(ScanCode.M, pygame.KMOD_NONE, self.change_cell_m_cmd)
+
+        self.key_facade.bind_scan_code(ScanCode.BACKSPACE, pygame.KMOD_NONE, self.change_cell_backspace_cmd)
         
 
-def run_audio_processing(audio):
+def run_thread_processing(audio):
     """Функция для запуска в отдельном потоке"""
     # Создаем новый цикл событий для потока
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     # Запускаем асинхронную функцию в этом потоке
-    loop.run_until_complete(audio.start_processing())
+    # loop.run_until_complete()
         
 async def main():
     window_width, window_height = 1250, 910
@@ -532,11 +558,12 @@ async def main():
 
     # Запускаем audio в отдельном потоке
     audio_thread = threading.Thread(
-        target=run_audio_processing, 
+        target=run_thread_processing, 
         args=(audio,),
         daemon=True  # Поток завершится при выходе из main
     )
     audio_thread.start()
+
 
     pygame.init()
     screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
@@ -569,7 +596,7 @@ async def main():
             pro_view.on_audio = None
             
         # Асинхронная "задержка" не блокирует цикл
-        await asyncio.sleep(1/30)
+        await asyncio.sleep(1/60)
         # clock.tick(30)
 
     await audio.stop_processing()
