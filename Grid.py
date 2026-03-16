@@ -4,8 +4,21 @@ from TextInput import TextInput
 from Command import Command
 
 class GridObject(GameObject):
+    """
+    Представляет сетку операторов программатора и визуальные элементы управления
+    методы: 
+    - коллизия элементов
+    - отрисовка сетки, номеров строк, навигации страниц
+    - кэширование картинок всех и отдельно
+    """
     def __init__(self, viewer_context, z_order=1):
         super().__init__(z_order)
+
+        # кэш поверхностей 
+        self.cell_rects = {}
+        self._dirty_positions = True  # Флаг для обновления позиций
+
+
         self.ctx = viewer_context
         self.screen = self.ctx.screen
         self.conf = self.ctx.config_cmd
@@ -45,6 +58,49 @@ class GridObject(GameObject):
     
     def _execute(self):
         pass
+
+    def _ensure_positions_updated(self):
+        """Обновляет позиции если нужно"""
+        if not self._dirty_positions:
+            return
+        
+        self.cell_rects.clear()
+        
+        first_row = self.page * 12
+        last_row = first_row + 12
+        cell_size = self.cell_size
+        padding = self.ctx.padding
+        offsetW = self.ctx.offsetW
+        offsetH = self.ctx.offsetH
+        
+        for row in range(first_row, last_row):
+            normalized_row = row % 12
+            
+            for col in range(self.cols):
+                idx = row * self.cols + col
+                if idx >= len(self.ctx.pro._commands):
+                    break
+                
+                if idx in self.cell_surfaces:
+                    x = padding + col * cell_size + offsetW
+                    y = padding + normalized_row * cell_size + offsetH
+                    self.cell_rects[idx] = pygame.Rect(
+                        x, y, cell_size, cell_size
+                    )
+        
+        self._dirty_positions = False
+
+    def draw_grid(self):
+        """Рисует сетку с изображениями"""
+        self._ensure_positions_updated()
+        
+        window_height = self.ctx.window_height
+        
+        for idx, rect in self.cell_rects.items():
+            if rect.y + self.ctx.thumb_size < 0 or rect.y > window_height:
+                continue
+            
+            self.screen.blit(self.cell_surfaces[idx], rect.topleft)
 
 
     def draw_page_navigation(self, pagehover=None):
@@ -417,45 +473,45 @@ class GridObject(GameObject):
         # Добавляем текст
         return (text_surface, text_rect)
  
-    def draw_grid(self):
-        """Рисует сетку с изображениями"""
-        # Определяем видимые строки
-        first_row = self.page * 12
-        last_row = first_row + 12
+    # def draw_grid(self):
+    #     """Рисует сетку с изображениями"""
+    #     # Определяем видимые строки
+    #     first_row = self.page * 12
+    #     last_row = first_row + 12
         
-        # Параметры позиционирования
-        cell_size = self.cell_size
-        padding = self.ctx.padding
-        offsetW = self.ctx.offsetW
-        offsetH = self.ctx.offsetH
-        window_height = self.ctx.window_height
+    #     # Параметры позиционирования
+    #     cell_size = self.cell_size
+    #     padding = self.ctx.padding
+    #     offsetW = self.ctx.offsetW
+    #     offsetH = self.ctx.offsetH
+    #     window_height = self.ctx.window_height
         
-        # Рисуем номера строк
-        self._draw_line_numbers(first_row, last_row, offsetH, window_height)
+    #     # Рисуем номера строк
+    #     self._draw_line_numbers(first_row, last_row, offsetH, window_height)
         
-        # Рисуем видимые ячейки
-        for row in range(first_row, last_row):
-            # Нормализуем row для расчета позиции на экране
-            # Для 1-й страницы: row=0..11, normalized_row=0..11
-            # Для 2-й страницы: row=12..23, normalized_row=0..11
-            normalized_row = row % 12  # или row - first_row
+    #     # Рисуем видимые ячейки
+    #     for row in range(first_row, last_row):
+    #         # Нормализуем row для расчета позиции на экране
+    #         # Для 1-й страницы: row=0..11, normalized_row=0..11
+    #         # Для 2-й страницы: row=12..23, normalized_row=0..11
+    #         normalized_row = row % 12  # или row - first_row
             
-            for col in range(self.cols):
-                idx = row * self.cols + col
-                if idx >= len(self.ctx.pro._commands):
-                    break
+    #         for col in range(self.cols):
+    #             idx = row * self.cols + col
+    #             if idx >= len(self.ctx.pro._commands):
+    #                 break
                 
-                # Вычисляем позицию, используя нормализованный номер строки
-                x = padding + col * cell_size + offsetW
-                y = padding + normalized_row * cell_size + offsetH
+    #             # Вычисляем позицию, используя нормализованный номер строки
+    #             x = padding + col * cell_size + offsetW
+    #             y = padding + normalized_row * cell_size + offsetH
                 
-                # Проверяем видимость
-                if y + self.ctx.thumb_size < 0 or y > window_height:
-                    continue
+    #             # Проверяем видимость
+    #             if y + self.ctx.thumb_size < 0 or y > window_height:
+    #                 continue
                 
-                # Рисуем ячейку из кэша
-                if idx in self.cell_surfaces:
-                    self.screen.blit(self.cell_surfaces[idx], (x, y))
+    #             # Рисуем ячейку из кэша
+    #             if idx in self.cell_surfaces:
+    #                 self.screen.blit(self.cell_surfaces[idx], (x, y))
         
     
     def _draw_line_numbers(self, first_row, last_row, offsetH, window_height):
