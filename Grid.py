@@ -14,9 +14,6 @@ class GridObject(GameObject):
     def __init__(self, viewer_context, z_order=1):
         super().__init__(z_order)
 
-        # кэш поверхностей 
-        self.cell_rects = {}
-        self._dirty_positions = True  # Флаг для обновления позиций
 
 
         self.ctx = viewer_context
@@ -29,9 +26,24 @@ class GridObject(GameObject):
         self.cols = self.ctx.cols
 
         self.page = 0
+
+
+        # кэш поверхностей 
+        self.cell_rects = {} # Словарь для хранения прямоугольников операторов {id: rect}
+        self._dirty_positions = True  # Флаг для обновления позиций
+        self.nav_buttons_rects = {}  # Словарь для хранения прямоугольников кнопок {page_num: rect}
+        self._nav_positions_dirty = True  # Флаг для обновления позиций
+        self.cell_surfaces = {}  # Словарь для хранения изображений {index: surface}
+
+        # требуемые параметры
+        self.list_commands = self.ctx.pro._commands
+        self.padding = self.ctx.padding
+        self.offsetW = self.ctx.offsetW
+        self.offsetH = self.ctx.offsetH
+        self.window_height = self.ctx.window_height
+        self.thumb_size = self.ctx.thumb_size
         
         # Кэш для поверхностей ячеек
-        self.cell_surfaces = {}  # {index: surface}
         
         # Предварительно создаем все ячейки
         self._create_all_cells()
@@ -69,16 +81,16 @@ class GridObject(GameObject):
         first_row = self.page * 12
         last_row = first_row + 12
         cell_size = self.cell_size
-        padding = self.ctx.padding
-        offsetW = self.ctx.offsetW
-        offsetH = self.ctx.offsetH
+        padding = self.padding
+        offsetW = self.offsetW
+        offsetH = self.offsetH
         
         for row in range(first_row, last_row):
             normalized_row = row % 12
             
             for col in range(self.cols):
                 idx = row * self.cols + col
-                if idx >= len(self.ctx.pro._commands):
+                if idx >= len(self.list_commands):
                     break
                 
                 if idx in self.cell_surfaces:
@@ -90,38 +102,102 @@ class GridObject(GameObject):
         
         self._dirty_positions = False
 
-    def draw_grid(self):
-        """Рисует сетку с изображениями"""
-        self._ensure_positions_updated()
+    def _ensure_all_positions_updated(self):
+        """Обновляет позиции для всех страниц"""
+        if not self._dirty_positions:
+            return
         
-        window_height = self.ctx.window_height
+        self.cell_rects.clear()
         
-        for idx, rect in self.cell_rects.items():
-            if rect.y + self.ctx.thumb_size < 0 or rect.y > window_height:
-                continue
-            
-            self.screen.blit(self.cell_surfaces[idx], rect.topleft)
-
-
-    def draw_page_navigation(self, pagehover=None):
-        """Рисует навигацию по страницам вверху экрана"""
-        # Параметры навигации
+        cell_size = self.cell_size
+        padding = self.padding
+        offsetW = self.offsetW
+        offsetH = self.offsetH
         rows_per_page = 12
         total_pages = 16
-        current_page = self.page + 1
-
-        if pagehover != None:
-            ishover = True
-        else:
-            ishover = False
         
-        # Параметры отображения
-        nav_height = 40
+        # Проходим по всем страницам
+        for page in range(total_pages):
+            first_row = page * rows_per_page
+            last_row = first_row + rows_per_page
+            
+            for row in range(first_row, last_row):
+                normalized_row = row % rows_per_page  # или row - first_row
+                
+                for col in range(self.cols):
+                    idx = row * self.cols + col
+                    if idx >= len(self.list_commands):
+                        break
+                    
+                    if idx in self.cell_surfaces:
+                        x = padding + col * cell_size + offsetW
+                        y = padding + normalized_row * cell_size + offsetH
+                        
+                        self.cell_rects[idx] = pygame.Rect(
+                            x, y, cell_size, cell_size
+                        )
+        
+        self._dirty_positions = False
+
+    def draw_grid(self):
+        """Рисует сетку с изображениями"""
+        self._ensure_all_positions_updated()
+        
+        window_height = self.window_height
+        first_row = self.page * 12
+        last_row = first_row + 12
+        print(self.page)
+
+        self._draw_line_numbers(first_row, last_row, self.offsetH, window_height)
+        
+        for row in range(first_row, last_row):
+            normalized_row = row % 12
+            for col in range(self.cols):
+                idx = row * self.cols + col
+                if idx >= len(self.ctx.pro._commands):
+                    break
+                rect = self.cell_rects[idx]
+                if rect.y + self.thumb_size < 0 or rect.y > window_height:
+                    continue
+                self.screen.blit(self.cell_surfaces[idx], rect.topleft)
+
+    def _update_nav_positions(self):
+        """Обновляет позиции кнопок навигации"""
+        self.nav_buttons_rects.clear()
+        
+        total_pages = 16
         nav_y = 10
         button_width = 50
         button_height = 30
         button_spacing = 5
+        
+        # Пересчитываем начальную позицию с учетом текущей ширины экрана
         start_x = (self.screen.get_width() - (total_pages * (button_width + button_spacing))) // 2
+        
+        for page in range(1, total_pages + 1):
+            x = start_x + (page - 1) * (button_width + button_spacing)
+            self.nav_buttons_rects[page] = pygame.Rect(
+                x, nav_y, button_width, button_height
+            )
+        
+        self._nav_positions_dirty = False
+
+    def draw_page_navigation(self, pagehover=None):
+        """Рисует навигацию по страницам вверху экрана"""
+        # Обновляем позиции если нужно (например, при изменении размера окна)
+        if self._nav_positions_dirty:
+            self._update_nav_positions()
+        
+        # Параметры навигации
+        rows_per_page = 12
+        total_pages = 16
+        current_page = self.page + 1
+        
+        ishover = pagehover is not None
+        
+        # Параметры отображения
+        nav_height = 40
+        nav_y = 10
         
         # Рисуем фон для навигации
         nav_bg = pygame.Surface((self.screen.get_width(), nav_height))
@@ -133,13 +209,7 @@ class GridObject(GameObject):
         font = pygame.font.SysFont('arial', 16, bold=True)
         
         # Рисуем кнопки страниц
-        for page in range(1, total_pages + 1):
-            x = start_x + (page - 1) * (button_width + button_spacing)
-            button_rect = pygame.Rect(x, nav_y, button_width, button_height)
-
-            # Сохраняем область кнопки
-            # self.nav_buttons_rects[page] = button_rect
-            
+        for page, button_rect in self.nav_buttons_rects.items():
             # Определяем цвета для кнопки
             if page == current_page:
                 button_color = (100, 150, 255)  # Синий для текущей страницы
@@ -156,13 +226,67 @@ class GridObject(GameObject):
             # Используем функцию для отрисовки кнопки
             self._draw_nav_button(button_rect, page, button_color, 
                                 text_color, border_color, font, ishover)
+
+    # def draw_page_navigation(self, pagehover=None):
+    #     """Рисует навигацию по страницам вверху экрана"""
+    #     # Параметры навигации
+    #     rows_per_page = 12
+    #     total_pages = 16
+    #     current_page = self.page + 1
+
+    #     if pagehover != None:
+    #         ishover = True
+    #     else:
+    #         ishover = False
         
-        # Рисуем дополнительную информацию
-        info_font = pygame.font.SysFont('arial', 14, bold=True)
+    #     # Параметры отображения
+    #     nav_height = 40
+    #     nav_y = 10
+    #     button_width = 50
+    #     button_height = 30
+    #     button_spacing = 5
+    #     start_x = (self.screen.get_width() - (total_pages * (button_width + button_spacing))) // 2
         
-        info_text = f"Привет от Majin"
-        text = info_font.render(info_text, True, (255, 228, 196))
-        self.screen.blit(text, (10, self.ctx.panel_height // 2))
+    #     # Рисуем фон для навигации
+    #     nav_bg = pygame.Surface((self.screen.get_width(), nav_height))
+    #     nav_bg.fill((40, 40, 40))
+    #     nav_bg.set_alpha(200)
+    #     self.screen.blit(nav_bg, (0, 0))
+        
+    #     # Шрифт для номеров страниц
+    #     font = pygame.font.SysFont('arial', 16, bold=True)
+        
+    #     # Рисуем кнопки страниц
+    #     for page in range(1, total_pages + 1):
+    #         x = start_x + (page - 1) * (button_width + button_spacing)
+    #         button_rect = pygame.Rect(x, nav_y, button_width, button_height)
+
+    #         # Сохраняем область кнопки
+    #         # self.nav_buttons_rects[page] = button_rect
+            
+    #         # Определяем цвета для кнопки
+    #         if page == current_page:
+    #             button_color = (100, 150, 255)  # Синий для текущей страницы
+    #             text_color = (255, 255, 255)
+    #             border_color = (150, 200, 255)
+    #         else:
+    #             if ishover and page == pagehover:
+    #                 button_color = (90, 90, 90)  # Светло-серый при наведении
+    #             else:
+    #                 button_color = (60, 60, 60)  # Серый для остальных
+    #             text_color = (200, 200, 200)
+    #             border_color = (100, 100, 100)
+            
+    #         # Используем функцию для отрисовки кнопки
+    #         self._draw_nav_button(button_rect, page, button_color, 
+    #                             text_color, border_color, font, ishover)
+        
+    #     # Рисуем дополнительную информацию
+    #     info_font = pygame.font.SysFont('arial', 14, bold=True)
+        
+    #     info_text = f"Привет от Majin"
+    #     text = info_font.render(info_text, True, (255, 228, 196))
+    #     self.screen.blit(text, (10, self.ctx.panel_height // 2))
 
     # ПОЛУЧАЕМ КНОПКУ ПОД КУРСОРОМ МАТЕМАТИЧЕСКИ (БЕЗ ЦИКЛА)
     def get_nav_button_at_position(self, mouse_x, mouse_y):
